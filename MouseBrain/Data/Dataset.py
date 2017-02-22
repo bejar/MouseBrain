@@ -77,7 +77,7 @@ class Dataset:
         print ('Num Stimuli = ', self.events.shape)
         print ('----------------------------------')
 
-    def resample(self, sampling):
+    def downsample(self, sampling):
         """
         Resamples the events arrays
 
@@ -90,8 +90,8 @@ class Dataset:
             wlen = int(self.signal.shape[0] /factor)
             print(wlen, self.signal.shape[0])
 
-            # self.signal = resample(self.signal, wlen)
-            # self.times = resample(self.times, wlen)
+            # self.signal = downsample(self.signal, wlen)
+            # self.times = downsample(self.times, wlen)
 
             self.signal = resample_poly(self.signal, 10, int(factor*10))
             self.times = resample_poly(self.times, 10, int(factor*10))
@@ -214,7 +214,7 @@ if __name__ == '__main__':
     # data.show_signal(0,5000)
     # data.show_events()
     print(data.sampling)
-    data.resample(99.20634920634922)
+    data.downsample(99.20634920634922)
     data.show_signal()
 
     data.extract_events(1, 0.5)
