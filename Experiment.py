@@ -26,8 +26,11 @@ __author__ = 'bejar'
 
 files = sorted([name.split('/')[-1].split('.')[0] for name in glob.glob(data_path + '/*.smr')])
 
+nev = 0
 for file in files:
     if file not in ['Exp006']:
         data = Dataset(file)
         data.read()
         data.describe()
+        nev += data.events.shape[0]
+print nev
