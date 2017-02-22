@@ -209,7 +209,7 @@ class Dataset:
 
 
 if __name__ == '__main__':
-    data = Dataset('Exp010')
+    data = Dataset('Exp013')
     data.read()
     # data.show_signal(0,5000)
     # data.show_events()

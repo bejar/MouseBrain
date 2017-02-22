@@ -33,4 +33,14 @@ for file in files:
         data.read()
         data.describe()
         nev += data.events.shape[0]
+        # data.downsample(99.20634920634922)
+        data.show_signal()
+
+        # data.extract_events(1, 0.5)
+        #
+        # data.mark_spikes(2, 0.05)
+        #
+        # for i in range(len(data.events)):
+        #     data.show_event(i)
+
 print nev
