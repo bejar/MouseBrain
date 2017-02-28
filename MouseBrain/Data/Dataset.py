@@ -98,7 +98,6 @@ class Dataset:
 
             self.sampling = sampling
 
-
     def extract_events(self, before, after):
         """
         Extracts windows for the events with (before)s before the event and (after)s after the event

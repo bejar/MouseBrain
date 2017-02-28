@@ -32,5 +32,7 @@ for file in files:
         data = Dataset(file)
         data.read()
         data.describe()
+        data.downsample(99.20634920634922)
+        data.extract_events(1, 0.5)
         nev += data.events.shape[0]
-print nev
+print(nev)
