@@ -48,7 +48,7 @@ class Dataset:
         self.wbefore = None
         self.wafter = None
 
-    def read(self):
+    def read(self, normalize=True):
         """
         Read the data from the file
         :return:
@@ -63,8 +63,9 @@ class Dataset:
             ind = 1
         self.events = seg.spiketrains[ind].times.rescale('s').magnitude
         self.sampling = float(seg.analogsignals[1].sampling_rate.rescale('Hz').magnitude)
-        self.signal -= np.mean(self.signal)
-        self.signal /= np.std(self.signal)
+        if normalize:
+            self.signal -= np.mean(self.signal)
+            self.signal /= np.std(self.signal)
 
     def describe(self):
         """
@@ -86,15 +87,13 @@ class Dataset:
         """
         if self.sampling != sampling:
             factor = self.sampling / sampling
-            print(factor)
-            wlen = int(self.signal.shape[0] /factor)
-            print(wlen, self.signal.shape[0])
+            wlen = int(self.signal.shape[0] / factor)
 
             # self.signal = downsample(self.signal, wlen)
             # self.times = downsample(self.times, wlen)
 
-            self.signal = resample_poly(self.signal, 10, int(factor*10))
-            self.times = resample_poly(self.times, 10, int(factor*10))
+            self.signal = resample_poly(self.signal, 10, int(factor * 10))
+            self.times = resample_poly(self.times, 10, int(factor * 10))
 
             self.sampling = sampling
 
@@ -105,6 +104,7 @@ class Dataset:
         :param after:
         :return:
         """
+
         def lookup(ipos, event):
             while self.times[ipos] < event:
                 ipos += 1
@@ -114,15 +114,27 @@ class Dataset:
         self.wafter = int(after * self.sampling)
         cursor = 0
         self.eventsarray = np.zeros((len(self.events), self.wbefore + self.wafter))
+        fail = []
         for i, ev in enumerate(self.events):
             cursor = lookup(cursor, ev)
-            # if ((cursor+self.wafter) < self.eventsarray.shape[1]) and ((cursor-self.wbefore) > 0):
-            self.eventsarray[i] = np.array(self.signal[cursor - self.wbefore:cursor + self.wafter])
+            if ((cursor + self.wafter) < self.signal.shape[0]) and ((cursor - self.wbefore) > 0):
+                self.eventsarray[i] = np.array(self.signal[cursor - self.wbefore:cursor + self.wafter])
+            else:
+                fail.append(i)
+
+        if len(fail) > 0:
+            sel = range(self.eventsarray.shape[0])
+            for f in fail:
+                sel.remove(f)
+            self.events = self.events[sel]
+            self.eventsarray = self.eventsarray[sel, :]
 
     def mark_spikes(self, threshold, offset):
         """
         stores the positions of the signal after the event that has a value higher than threshold
 
+        :param threshold:
+        :param offset:
         :return:
         """
 
@@ -140,7 +152,7 @@ class Dataset:
 
     def show_signal(self, begin=None, end=None):
         """
-
+        Graphic showing a segment (begin, end) of the raw signal
         :param begin:
         :param end:
         :return:
@@ -165,6 +177,7 @@ class Dataset:
 
     def show_events(self):
         """
+        Graphic showing all the signal with the events marked
 
         :return:
         """
@@ -185,7 +198,9 @@ class Dataset:
 
     def show_event(self, ev):
         """
+        Graphic showing a single event
 
+        :param ev:
         :return:
         """
         fig = plt.figure()
@@ -206,19 +221,43 @@ class Dataset:
             sp1.plot(tm, val, 'r')
         plt.show()
 
+    def get_events_data(self, chop=False, discard=None):
+        """
+        Returns the events data as a matrix
+        :param chop: Divide the event matrix in pre and post events matrix
+        :param discard: Discard a number of seconds before and after the event
+        :return:
+        """
+        if discard is not None:
+            vdiscard = int(self.sampling * discard)
+        else:
+            vdiscard = 0
+
+        prem = self.eventsarray[:, :self.wbefore - vdiscard]
+        posm = self.eventsarray[:, self.wbefore + vdiscard:]
+
+        if chop:
+            return prem, posm
+        else:
+            return np.column_stack((prem, posm))
+
 
 if __name__ == '__main__':
-    data = Dataset('Exp013')
-    data.read()
+    data = Dataset('Exp026')
+    data.read(normalize=False)
     # data.show_signal(0,5000)
     # data.show_events()
     print(data.sampling)
     data.downsample(99.20634920634922)
-    data.show_signal()
+    # data.show_signal()
 
     data.extract_events(1, 0.5)
 
-    data.mark_spikes(2, 0.05)
+    mat = data.get_events_data(discard=0.05)
 
-    for i in range(len(data.events)):
-        data.show_event(i)
+    print (mat.shape)
+
+    # data.mark_spikes(2, 0.05)
+
+    # for i in range(len(data.events)):
+    #     data.show_event(i)

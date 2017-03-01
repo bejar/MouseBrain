@@ -21,3 +21,4 @@ __author__ = 'bejar'
 
 
 data_path = '/home/bejar/storage/Data/Mouse/'
+save_path = '/home/bejar/storage/Data/Mouse/'
