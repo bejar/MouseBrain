@@ -220,11 +220,12 @@ class Dataset:
             val = np.zeros(self.marks[ev, 1] - self.marks[ev, 0] + 10) + self.threshold
             sp1.plot(tm, val, 'r')
         plt.show()
+        plt.close()
 
-    def get_events_data(self, chop=False, discard=None):
+    def get_events_data(self, split=False, discard=None, normalize=False):
         """
         Returns the events data as a matrix
-        :param chop: Divide the event matrix in pre and post events matrix
+        :param split: Divide the event matrix in pre and post events matrix
         :param discard: Discard a number of seconds before and after the event
         :return:
         """
@@ -235,8 +236,15 @@ class Dataset:
 
         prem = self.eventsarray[:, :self.wbefore - vdiscard]
         posm = self.eventsarray[:, self.wbefore + vdiscard:]
+        join = np.column_stack((prem, posm))
 
-        if chop:
+        if normalize:
+            exmn = np.mean(join)
+            exstd = np.std(join)
+            prem = (prem - exmn) / exstd
+            posm = (posm - exmn) / exstd
+
+        if split:
             return prem, posm
         else:
             return np.column_stack((prem, posm))
