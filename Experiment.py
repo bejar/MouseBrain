@@ -29,7 +29,7 @@ if __name__ == '__main__':
     files = sorted([name.split('/')[-1].split('.')[0] for name in glob.glob(data_path + '/*.smr')])
 
     nev = 0
-    split = False
+    split = True
     experiments = []
     experiments2 = []
     for file in files:
