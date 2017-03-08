@@ -99,7 +99,7 @@ class Dataset:
 
     def extract_events(self, before, after):
         """
-        Extracts windows for the events with (before)s before the event and (after)s after the event
+        Extracts windows for the events with (before)seconds before the event and (after)seconds after the event
         :param before:
         :param after:
         :return:
@@ -147,8 +147,18 @@ class Dataset:
                     self.marks[i, 0] = j
                 if self.eventsarray[i, j] < threshold and self.marks[i, 0] != 0 and self.marks[i, 1] == 0:
                     self.marks[i, 1] = j
-            if self.marks[i, 1] == 0:
+            if self.marks[i, 1] == 0 and self.marks[i, 0] != 0:
                 self.marks[i, 1] = self.eventsarray.shape[1] - 5
+
+    def assign_labels(self):
+        """
+        Assigns a label to an event depending if a spike has been detected in the post event signal
+
+        :return:
+        """
+        if self.marks is None:
+            raise Exception('Events not marked')
+        return np.array([0 if mk[0] == 0 else 1 for mk in self.marks])
 
     def show_signal(self, begin=None, end=None):
         """
@@ -251,8 +261,8 @@ class Dataset:
 
 
 if __name__ == '__main__':
-    data = Dataset('Exp026')
-    data.read(normalize=False)
+    data = Dataset('Exp025')
+    data.read(normalize=True)
     # data.show_signal(0,5000)
     # data.show_events()
     print(data.sampling)
@@ -261,11 +271,14 @@ if __name__ == '__main__':
 
     data.extract_events(1, 0.5)
 
-    mat = data.get_events_data(discard=0.05)
+    # mat = data.get_events_data(discard=0.05)
+    #
+    # print (mat.shape)
 
-    print (mat.shape)
+    data.mark_spikes(2, 0.05)
 
-    # data.mark_spikes(2, 0.05)
-
+    print data.assign_labels()
+    print data.marks
+    #
     # for i in range(len(data.events)):
     #     data.show_event(i)
