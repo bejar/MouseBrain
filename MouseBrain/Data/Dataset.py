@@ -152,13 +152,10 @@ class Dataset:
 
     def assign_labels(self):
         """
-        Assigns a label to an event depending if a spike has been detected in the post event signal
-
+        Returns the labels for the spikes (0 or 1 whether there is a spike large enough after the event
         :return:
         """
-        if self.marks is None:
-            raise Exception('Events not marked')
-        return np.array([0 if mk[0] == 0 else 1 for mk in self.marks])
+        return np.array([0 if mark[0] == 0 else 1 for mark in self.marks])
 
     def show_signal(self, begin=None, end=None):
         """
@@ -261,7 +258,7 @@ class Dataset:
 
 
 if __name__ == '__main__':
-    data = Dataset('Exp025')
+    data = Dataset('Exp064')
     data.read(normalize=True)
     # data.show_signal(0,5000)
     # data.show_events()
@@ -278,7 +275,8 @@ if __name__ == '__main__':
     data.mark_spikes(2, 0.05)
 
     print data.assign_labels()
-    print data.marks
-    #
-    # for i in range(len(data.events)):
-    #     data.show_event(i)
+    # print data.marks
+
+    for i, e in zip(range(len(data.events)), data.assign_labels()):
+        if e == 0:
+            data.show_event(i)
