@@ -126,6 +126,7 @@ class Dataset:
             sel = range(self.eventsarray.shape[0])
             for f in fail:
                 sel.remove(f)
+            self.times = self.times[sel]
             self.events = self.events[sel]
             self.eventsarray = self.eventsarray[sel, :]
 

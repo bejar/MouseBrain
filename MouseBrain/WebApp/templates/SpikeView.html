@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Keras Training Graph</title>
+
+    <style type="text/css">
+        container {
+        margin: 0 auto;
+        width: 740px;
+        border: 1px solid #ddd;
+        padding: 0 5px;
+        text-align: left; /* Cancel IE Fix */
+        }
+
+        table, th, td {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+<h2>Keras Training Graph </h2>
+
+<br>
+<table>
+    <tr>
+        <td>Experiment</td>
+        <td>{{exp}}</td>
+    </tr>
+    <tr>
+        <td>Event</td>
+        <td>{{event}}</td>
+    </tr>
+</table>
+
+<br>
+<img src="data:image/png;base64, {{ plot_url }}">
+
+</body>
+</html>

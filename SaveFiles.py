@@ -18,7 +18,7 @@ Experiment
 """
 
 from MouseBrain.Data import Dataset
-from MouseBrain.Config import data_path
+from MouseBrain.Config import data_path, save_path
 import glob
 import numpy as np
 from collections import Counter
@@ -38,20 +38,12 @@ if __name__ == '__main__':
         if file not in ['Exp006']:
             data = Dataset(file)
             data.read(normalize=False)
-            # data.describe()
             nev += data.events.shape[0]
             data.downsample(99.20634920634922)
-            # data.show_signal()
 
-            data.extract_events(1, 0.5)
+            data.extract_events(1, 0.25)
 
-            # data.mark_spikes(2, 0.05)
-            #
-            # # for i in range(len(data.events)):
-            # for i in range(10):
-            #     data.show_event(i)
-
-            mat = data.get_events_data(discard=0.01, split=split, normalize=True)
+            mat = data.get_events_data(discard=0.05, split=split, normalize=True)
 
             if split:
                experiments.append(mat[0])
@@ -62,22 +54,22 @@ if __name__ == '__main__':
             data = Dataset(file)
             data.read(normalize=True)
             data.downsample(99.20634920634922)
-            data.extract_events(1, 0.5)
+            data.extract_events(1, 0.25)
             data.mark_spikes(2, 0.05)
             labels.append(data.assign_labels())
 
     print nev
     if split:
         datamat = np.concatenate(experiments)
-        np.save(data_path + 'mousepre.npy', datamat)
+        np.save(save_path + 'mousepre.npy', datamat)
         datamat = np.concatenate(experiments2)
-        np.save(data_path + 'mousepost.npy', datamat)
+        np.save(save_path + 'mousepost.npy', datamat)
         datamat = np.concatenate(labels)
-        np.save(data_path + 'mouselabels.npy', datamat)
+        np.save(save_path + 'mouselabels.npy', datamat)
         print Counter(datamat)
     else:
         datamat = np.concatenate(experiments)
-        np.save(data_path + 'mouseall.npy', datamat)
+        np.save(save_path + 'mouseall.npy', datamat)
         datamat = np.concatenate(labels)
         print Counter(datamat)
-        np.save(data_path + 'mouselabels.npy', datamat)
+        np.save(save_path + 'mouselabels.npy', datamat)

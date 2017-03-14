@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MouseBrain Experiments List</title>
+
+    <style type="text/css">
+        table, th, td {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+
+<h1>MouseBrain Experiments List</h1>
+
+<br>
+
+
+<table>
+    <tr>
+        <th>Experiment</th>
+        <th>Num Events</th>
+        <th>Events/Class 0</th>
+        <th>Events/Class 1</th>
+        <th>View</th>
+    </tr>
+    {% for net in data|sort %}
+    <tr>
+        <td>{{net}}</td>
+        <td>{{data[net]['ev_cnt']}}</td>
+        <td>{{data[net]['labels'][0]}}</td>
+        <td>{{data[net]['labels'][1]}}</td>
+
+        <td>
+            <form action="/Experiment" method="post">
+                <button type="submit" name="experiment" value={{net}}> Experiment</button>
+            </form>
+        </td>
+     </tr>
+    {% endfor %}
+</table>
+
+</body>
+</html>

@@ -13,14 +13,8 @@ __init__.py
 
 :Version: 
 
-:Created on: 20/02/2017 13:45 
+:Created on: 14/03/2017 11:06 
 
 """
 
 __author__ = 'bejar'
-
-
-from .Constants import data_path, save_path
-
-
-__all__ = ['data_path', 'save_path']
