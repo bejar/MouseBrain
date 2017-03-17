@@ -45,48 +45,50 @@ if __name__ == '__main__':
             data = Dataset(file)
             data.read(normalize=False)
             # data.describe()
-            nev += data.events.shape[0]
-            data.downsample(99.20634920634922)
-            # data.show_signal()
+            if data.sampling > 100.0:
+                nev += data.events.shape[0]
+                data.downsample(256.4102564102564)
+                # data.show_signal()
 
-            data.extract_events(1, 0.5)
+                data.extract_events(1.5, 0.25)
 
-            # data.mark_spikes(2, 0.05)
-            #
-            # # for i in range(len(data.events)):
-            # for i in range(10):
-            #     data.show_event(i)
+                # data.mark_spikes(2, 0.05)
+                #
+                # # for i in range(len(data.events)):
+                # for i in range(10):
+                #     data.show_event(i)
 
-            mat = data.get_events_data(discard=0.05, split=True, normalize=True)
+                mat = data.get_events_data(discard=0.01, split=True, normalize=True)
 
-            predata = mat[0]
-            postdata = mat[1]
+                predata = mat[0]
+                postdata = mat[1]
 
-            data = Dataset(file)
-            data.read(normalize=True)
-            data.downsample(99.20634920634922)
-            data.extract_events(1, 0.25)
-            data.mark_spikes(2, 0.05)
-            spikes = data.eventsarray
-            spmarks = data.marks
-            labels = data.assign_labels()
-            vmax = max(np.max(postdata), np.max(predata))
-            vmin = min(np.min(postdata), np.min(predata))
+                data = Dataset(file)
+                data.read(normalize=True)
+                data.downsample(256.4102564102564)
+                data.extract_events(1.5, 0.25)
+                data.mark_spikes(1.5, 0.035)
+                spikes = data.eventsarray
+                spmarks = data.marks
+                labels = data.assign_labels()
+                vmax = max(np.max(postdata), np.max(predata))
+                vmin = min(np.min(postdata), np.min(predata))
 
-            for i in range(spikes.shape[0]):
-                event = {'exp': file,
-                         'event': i,
-                         'pre': Binary(cPickle.dumps(predata[i], protocol=2)),
-                         'post':  Binary(cPickle.dumps(postdata[i], protocol=2)),
-                         'spike':  Binary(cPickle.dumps(spikes[i], protocol=2)),
-                         'mark':  Binary(cPickle.dumps(spmarks[i], protocol=2)),
-                         'label': int(labels[i]),
-                         'sampling': data.sampling,
-                         'wbefore': data.wbefore,
-                         'wafter': data.wafter,
-                         'event_time': float(data.events[i]),
-                         'vmax': vmax,
-                         'vmin': vmin}
+                for i in range(spikes.shape[0]):
+                    if labels[i] == 0:
+                        event = {'exp': file,
+                                 'event': i,
+                                 'pre': Binary(cPickle.dumps(predata[i], protocol=2)),
+                                 'post':  Binary(cPickle.dumps(postdata[i], protocol=2)),
+                                 'spike':  Binary(cPickle.dumps(spikes[i], protocol=2)),
+                                 'mark':  Binary(cPickle.dumps(spmarks[i], protocol=2)),
+                                 'label': int(labels[i]),
+                                 'sampling': data.sampling,
+                                 'wbefore': data.wbefore,
+                                 'wafter': data.wafter,
+                                 'event_time': float(data.events[i]),
+                                 'vmax': vmax,
+                                 'vmin': vmin}
 
-                col.insert(event)
+                        col.insert(event)
 

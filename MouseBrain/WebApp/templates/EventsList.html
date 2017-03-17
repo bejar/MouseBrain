@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>MouseBrain Experiments List</title>
+    <title>MouseBrain Events List</title>
 
     <style type="text/css">
         table, th, td {
@@ -11,11 +11,12 @@
 </head>
 <body>
 
-<h1>MouseBrain Experiments List</h1>
+<h1>MouseBrain Events List</h1>
 
 <br>
 <p>Experiment {{exp}}</p>
-
+<a href="http://polaris.lsi.upc.edu:{{port}}/MouseBrain">Go Back</a>
+<p></p>
 <table>
     <tr>
         <th>Event</th>
@@ -24,16 +25,27 @@
     </tr>
     {% for net in data|sort %}
     <tr>
+        {%if data[net]['check']%}
+        <td><span style="color:red"> {{net}}</span></td>
+        {% else %}
         <td>{{net}}</td>
+        {% endif %}
         <td>{{data[net]['label']}}</td>
         <td>
             <form action="/View" method="post">
                 <button type="submit" name="view" value={{net}}> View</button>
             </form>
         </td>
+        <td>
+            <form action="/Mark" method="post">
+                <button type="submit" name="mark" value={{net}}> Mark/Unmark</button>
+            </form>
+        </td>
      </tr>
     {% endfor %}
 </table>
+<p></p>
+<a href="http://polaris.lsi.upc.edu:{{port}}/MouseBrain">Go Back</a>
 
 </body>
 </html>

@@ -56,8 +56,7 @@ def info():
     client = MongoClient('mongodb://localhost:27017/')
     col = client.MouseBrain.Spikes
     vals = col.find({},
-                    {'_id': 1, 'exp': 1, 'event': 1, 'label': 1})
-
+                    {'_id': 1, 'exp': 1, 'event': 1, 'label': 1, 'check': 1})
     res = {}
     for v in vals:
         if v['exp'] not in res:
@@ -66,6 +65,8 @@ def info():
         else:
             res[v['exp']]['ev_cnt'] += 1
             res[v['exp']]['labels'][v['label']] += 1
+        if 'check' in v and v['check']:
+            res[v['exp']]['check'] = True
 
     return render_template('ExperimentsList.html', data=res)
 
@@ -80,13 +81,17 @@ def experiment():
     client = MongoClient('mongodb://localhost:27017/')
     col = client.MouseBrain.Spikes
     vals = col.find({'exp': payload},
-                    {'_id': 1, 'exp': 1, 'event': 1, 'label': 1})
+                    {'_id': 1, 'exp': 1, 'event': 1, 'label': 1, 'check': 1})
 
     res = {}
     for v in vals:
-        res[payload + '/' + '%03d' % v['event']] = {'event': v['event'], 'label': v['label']}
+        if 'check' in v:
+            mark = v['check']
+        else:
+            mark = False
+        res[payload + '/' + '%03d' % v['event']] = {'event': v['event'], 'label': v['label'], 'check': mark}
 
-    return render_template('EventsList.html', data=res, exp=payload)
+    return render_template('EventsList.html', data=res, exp=payload, port=port)
 
 
 @app.route('/View', methods=['GET', 'POST'])
@@ -103,7 +108,6 @@ def graphic():
     exp, event = payload.split('/')
     event = int(event)
 
-    payload = request.form['view']
     client = MongoClient('mongodb://localhost:27017/')
     col = client.MouseBrain.Spikes
 
@@ -134,10 +138,10 @@ def graphic():
     axes.plot([disc1,disc2], [maxv,maxv], 'b')
     axes.plot([disc1,disc2], [minv,minv], 'b')
     if mark[0] !=0:
-        axes.plot([mark[0]-5,mark[1]+5], [maxv, maxv], 'g')
-        axes.plot([mark[0]-5,mark[1]+5], [minv, minv], 'g')
-        axes.plot([mark[0]-5,mark[0]-5], [maxv, minv], 'g')
-        axes.plot([mark[1]+5,mark[1]+5], [maxv, minv], 'g')
+        axes.plot([mark[0],mark[1]], [maxv, maxv], 'g')
+        axes.plot([mark[0],mark[1]], [minv, minv], 'g')
+        axes.plot([mark[0],mark[0]], [maxv, minv], 'g')
+        axes.plot([mark[1],mark[1]], [maxv, minv], 'g')
     plt.legend()
     plt.savefig(img, format='png')
     img.seek(0)
@@ -145,243 +149,46 @@ def graphic():
     plot_url = base64.b64encode(img.getvalue())
     plt.close()
 
-    # if vals is not None:
-    #     del vals['_id']
-    #
-    #     img = StringIO.StringIO()
-    #
-    #     fig = plt.figure(figsize=(10, 8), dpi=200)
-    #     axes = fig.add_subplot(1, 1, 1)
-    #
-    #     for v, color, style in zip(sorted(vals), lcolors, lstyles):
-    #         axes.plot(range(len(vals[v])), vals[v], color + style, label=v)
-    #
-    #     axes.set_xlabel('epoch')
-    #     axes.set_ylabel('acc/loss')
-    #     axes.set_title("Training/Test")
-    #     axes.yaxis.set_major_locator(ticker.MultipleLocator(0.1))
-    #     axes.xaxis.set_major_locator(ticker.MultipleLocator(25))
-    #
-    #     plt.legend()
-    #     plt.savefig(img, format='png')
-    #     img.seek(0)
-    #
-    #     plot_url = base64.b64encode(img.getvalue())
-    #     plt.close()
-
     return render_template('SpikeView.html', plot_url=plot_url, exp=exp, event=event)
-    # else:
-    #     return ""
 
 
-# @app.route('/Logs')
-# def logs():
-#     """
-#     Returns the logs in the DB
-#     """
-#     client = MongoClient(mongoconnection.server)
-#     db = client[mongoconnection.db]
-#     db.authenticate(mongoconnection.user, password=mongoconnection.passwd)
-#     col = db[mongoconnection.col]
-#
-#     vals = col.find({}, {'final_acc': 1, 'final_val_acc': 1, 'time_init': 1, 'time_end': 1, 'time_upd': 1, 'acc': 1,
-#                          'done': 1, 'mark': 1, 'config': 1})
-#     res = {}
-#     for v in vals:
-#         if 'time_init' in v:
-#             res[v['_id']] = {}
-#             if 'mark' in v:
-#                 res[v['_id']]['mark'] = v['mark']
-#             else:
-#                 res[v['_id']]['mark'] = False
-#             if 'final_acc' in v:
-#                 res[v['_id']]['acc'] = v['final_acc']
-#             else:
-#                 res[v['_id']]['acc'] = 0
-#             if 'final_val_acc' in v:
-#                 res[v['_id']]['val_acc'] = v['final_val_acc']
-#             else:
-#                 res[v['_id']]['val_acc'] = 0
-#             res[v['_id']]['init'] = v['time_init']
-#             if 'time_end' in v:
-#                 res[v['_id']]['end'] = v['time_end']
-#             else:
-#                 res[v['_id']]['end'] = 'pending'
-#             res[v['_id']]['zfactor'] = v['config']['zfactor']
-#
-#     return render_template('ExperimentsList.html', data=res)
-#
-#
-# @app.route('/Mark', methods=['GET', 'POST'])
-# def mark():
-#     """
-#     Marks an experiment
-#     :return:
-#     """
-#     payload = request.form['mark']
-#     client = MongoClient(mongoconnection.server)
-#     db = client[mongoconnection.db]
-#     db.authenticate(mongoconnection.user, password=mongoconnection.passwd)
-#     col = db[mongoconnection.col]
-#     vals = col.find_one({'_id': int(payload)}, {'mark': 1, 'done': 1})
-#
-#     text = ' Not Marked'
-#     if vals['done']:
-#         if not 'mark' in vals:
-#             marked = True
-#         else:
-#             marked = not vals['mark']
-#
-#         col.update({'_id': vals['_id']}, {'$set': {'mark': marked}})
-#         text = ' Marked'
-#
-#     head = """
-#     <!DOCTYPE html>
-# <html>
-# <head>
-#     <title>Keras NN Mark </title>
-#    <meta http-equiv="refresh" content="3;http://%s:%d/Logs" />
-#   </head>
-# <body>
-# """ % (hostname, port)
-#     end = '</body></html>'
-#
-#     return head + str(payload) + text + end
-#
-#
-# @app.route('/Delete', methods=['GET', 'POST'])
-# def delete():
-#     """
-#     Deletes a log
-#     """
-#     payload = request.form['delete']
-#     client = MongoClient(mongoconnection.server)
-#     db = client[mongoconnection.db]
-#     db.authenticate(mongoconnection.user, password=mongoconnection.passwd)
-#     col = db[mongoconnection.col]
-#
-#     col.remove({'_id': int(payload)})
-#
-#     head = """
-#     <!DOCTYPE html>
-# <html>
-# <head>
-#     <title>Keras NN Delete </title>
-#    <meta http-equiv="refresh" content="3;http://%s:%d/Logs" />
-#   </head>
-# <body>
-# """ % (hostname, port)
-#     end = '</body></html>'
-#
-#     return head + str(payload) + ' Removed' + end
-#
-#
+@app.route('/Mark', methods=['GET', 'POST'])
+def mark():
+    """
+    Marks an experiment
+    :return:
+    """
+    payload = request.form['mark']
+    exp, event = payload.split('/')
+    event = int(event)
 
-#
-# @app.route('/Model', methods=['GET', 'POST'])
-# def model():
-#     """
-#     Generates a page with the configuration of the training and the model
-#
-#     :return:
-#     """
-#
-#     payload = request.form['model']
-#
-#     client = MongoClient(mongoconnection.server)
-#     db = client[mongoconnection.db]
-#     db.authenticate(mongoconnection.user, password=mongoconnection.passwd)
-#     col = db[mongoconnection.col]
-#
-#     vals = col.find_one({'_id': int(payload)}, {'model': 1, 'config': 1, 'svgmodel': 1})
-#     pp = pprint.PrettyPrinter(indent=4)
-#
-#     if 'svgmodel' in vals:
-#         svgmodel = vals['svgmodel']
-#     else:
-#         svgmodel = ''
-#
-#     head = """
-#     <!DOCTYPE html>
-# <html>
-# <head>
-#     <title>Keras NN Config </title>
-#   </head>
-# <body>
-# """
-#     end = '</body></html>'
-#
-#     return head + \
-#            '<br><h2>Config:</h2><br><br>' + pprint.pformat(vals['config'], indent=4, width=60).replace('\n', '<br>') + \
-#            '<br><br><h2>Graph:</h2><br><br>' + svgmodel + '<br><br><h2>Net:</h2><br><br>' + \
-#            pprint.pformat(vals['model'], indent=4, width=40).replace('\n', '<br>') + \
-#            '<br>' + \
-#            end
-#
-#
-# @app.route('/Report', methods=['GET', 'POST'])
-# def report():
-#     """
-#     Returns a web page with the classification report
-#
-#     :return:
-#     """
-#     payload = request.form['report']
-#
-#     client = MongoClient(mongoconnection.server)
-#     db = client[mongoconnection.db]
-#     db.authenticate(mongoconnection.user, password=mongoconnection.passwd)
-#     col = db[mongoconnection.col]
-#
-#     vals = col.find_one({'_id': int(payload)}, {'report': 1, 'confusion': 1})
-#
-#     head = """
-#     <!DOCTYPE html>
-# <html>
-# <head>
-#     <title>Keras NN Config </title>
-#   </head>
-# <body>
-# """
-#     end = '</body></html>'
-#
-#     if 'report' in vals:
-#         return head + \
-#                '<br><h2>Report:</h2><pre>' + vals['report'] + \
-#                '</pre><br><br><h2>Confusion:</h2><pre>' + vals['confusion'] + '</pre><br><br>' + \
-#                end
-#
-#     else:
-#         return 'No report'
-#
-#
-# @app.route('/Stop', methods=['GET', 'POST'])
-# def stop():
-#     """
-#     Writes on the DB configuration of the process that it has to stop the next epoch
-#
-#     :return:
-#     """
-#     payload = request.form['stop']
-#
-#     client = MongoClient(mongoconnection.server)
-#     db = client[mongoconnection.db]
-#     db.authenticate(mongoconnection.user, password=mongoconnection.passwd)
-#     col = db[mongoconnection.col]
-#     col.update({'_id': int(payload)}, {'$set': {'stop': True}})
-#
-#     head = """
-#     <!DOCTYPE html>
-# <html>
-# <head>
-#     <title>Keras NN Stop </title>
-#    <meta http-equiv="refresh" content="3;http://%s:%d/Monitor" />
-#   </head>
-# <body>
-# """ % (hostname, port)
-#     end = '</body></html>'
-#
-#     return head + str(payload) + ' Stopped' + end
+    client = MongoClient('mongodb://localhost:27017/')
+    col = client.MouseBrain.Spikes
+
+    vals = col.find_one({'exp': exp, 'event': event}, {'_id':1, 'check': 1})
+    if not 'check' in vals:
+        marked = True
+    else:
+        marked = not vals['check']
+
+    col.update({'_id': vals['_id']}, {'$set': {'check': marked}})
+    text = ' Marked'
+
+    head = """
+    <!DOCTYPE html>
+<html>
+<head>
+    <title>MouseBrain Mark </title>
+  </head>
+<body>
+          %s
+          <form action="/Experiment" method="post">
+                <button type="submit" name="experiment" value=%s> Go bak</button>
+            </form>
+            </body></html>
+
+""" % (str(payload) + text, exp)
+    return head
 
 
 if __name__ == '__main__':
