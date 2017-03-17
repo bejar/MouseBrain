@@ -29,7 +29,6 @@ if __name__ == '__main__':
 
     files = sorted([name.split('/')[-1].split('.')[0] for name in glob.glob(data_path + '/*.smr')])
 
-    nev = 0
     split = True
     experiments = []
     experiments2 = []
@@ -39,7 +38,6 @@ if __name__ == '__main__':
             data = Dataset(file)
             data.read(normalize=False)
             if data.sampling > 100.0:
-                nev += data.events.shape[0]
                 data.downsample(256.4102564102564)
 
                 data.extract_events(2, 0.25)
@@ -58,10 +56,11 @@ if __name__ == '__main__':
                 data.extract_events(2, 0.25)
                 data.mark_spikes(1.5, 0.035)
                 labels.append(data.assign_labels())
-    print nev
+    nev = 0
     if split:
         ldatamat = np.concatenate(labels)
         np.save(save_path + 'mouselabels.npy', ldatamat[ldatamat==0])
+        nev += ldatamat[ldatamat==0].shape[0]
         datamat = np.concatenate(experiments)
         np.save(save_path + 'mousepre.npy', datamat[ldatamat==0])
         datamat = np.concatenate(experiments2)
@@ -70,7 +69,9 @@ if __name__ == '__main__':
     else:
         ldatamat = np.concatenate(labels)
         np.save(save_path + 'mouselabels.npy', ldatamat[ldatamat==0])
+        nev += ldatamat[ldatamat==0].shape[0]
         datamat = np.concatenate(experiments)
         np.save(save_path + 'mouseall.npy', datamat[ldatamat==0])
 
+    print nev
 

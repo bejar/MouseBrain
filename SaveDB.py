@@ -40,6 +40,10 @@ if __name__ == '__main__':
     experiments = []
     experiments2 = []
     labels = []
+
+    sigma = 1.5
+    latencia = 0.025
+    discard = 0.01
     for file in files:
         if file not in ['Exp006']:
             data = Dataset(file)
@@ -58,7 +62,7 @@ if __name__ == '__main__':
                 # for i in range(10):
                 #     data.show_event(i)
 
-                mat = data.get_events_data(discard=0.01, split=True, normalize=True)
+                mat = data.get_events_data(discard=discard, split=True, normalize=True)
 
                 predata = mat[0]
                 postdata = mat[1]
@@ -67,7 +71,7 @@ if __name__ == '__main__':
                 data.read(normalize=True)
                 data.downsample(256.4102564102564)
                 data.extract_events(1.5, 0.25)
-                data.mark_spikes(1.5, 0.035)
+                data.mark_spikes(sigma, latencia + discard)
                 spikes = data.eventsarray
                 spmarks = data.marks
                 labels = data.assign_labels()
@@ -88,7 +92,10 @@ if __name__ == '__main__':
                                  'wafter': data.wafter,
                                  'event_time': float(data.events[i]),
                                  'vmax': vmax,
-                                 'vmin': vmin}
+                                 'vmin': vmin,
+                                 'sigma': sigma,
+                                 'latency': latencia,
+                                 'discard': discard}
 
                         col.insert(event)
 

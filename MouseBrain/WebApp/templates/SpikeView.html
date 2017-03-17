@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Keras Training Graph</title>
+    <title>Mouse Brain Graph</title>
 
     <style type="text/css">
         container {
@@ -18,7 +18,7 @@
     </style>
 </head>
 <body>
-<h2>Keras Training Graph </h2>
+<h2>Mouse Brain Graph </h2>
 
 <br>
 <table>
@@ -33,7 +33,24 @@
 </table>
 
 <br>
+
+<form action="/Experiment" method="post">
+                <button type="submit" name="experiment" value={{exp}}> Go back</button>
+            </form>
+
+<br>
+
 <img src="data:image/png;base64, {{ plot_url }}">
+
+<br>
+Annotation: <form action="/Annotate" method="post">
+    <input type="text" name="annotation">
+    <input type="submit" name="submit" value="Send">
+            </form>
+<br>
+<form action="/Experiment" method="post">
+                <button type="submit" name="experiment" value={{exp}}> Go back</button>
+            </form>
 
 </body>
 </html>

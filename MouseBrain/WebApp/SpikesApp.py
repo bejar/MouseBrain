@@ -51,7 +51,7 @@ app = Flask(__name__)
 @app.route('/MouseBrain')
 def info():
     """
-    Status de las ciudades
+    Lista de experimentos
     """
     client = MongoClient('mongodb://localhost:27017/')
     col = client.MouseBrain.Spikes
@@ -74,7 +74,7 @@ def info():
 @app.route('/Experiment', methods=['GET', 'POST'])
 def experiment():
     """
-    Status de las ciudades
+    Experimento
     """
 
     payload = request.form['experiment']
@@ -102,8 +102,6 @@ def graphic():
     :return:
     """
 
-    lstyles = ['-', '-', '-', '-'] * 3
-    lcolors = ['r', 'g', 'b', 'y'] * 3
     payload = request.form['view']
     exp, event = payload.split('/')
     event = int(event)
@@ -112,37 +110,53 @@ def graphic():
     col = client.MouseBrain.Spikes
 
     vals = col.find_one({'exp': exp, 'event': event}, {'spike': 1, 'mark': 1, 'event_time': 1, 'pre':1, 'post': 1,
-                                                       'vmax':1, 'vmin':1})
+                                                       'vmax':1, 'vmin':1, 'sampling':1, 'sigma':1, 'latency': 1,
+                                                       'discard': 1})
 
     data = cPickle.loads(vals['spike'])
     pre = cPickle.loads(vals['pre'])
     post = cPickle.loads(vals['post'])
     mark = cPickle.loads(vals['mark'])
 
-    disc1 = pre.shape[0]
-    disc2 = data.shape[0]-post.shape[0]
-
     img = StringIO.StringIO()
     fig = plt.figure(figsize=(10, 4), dpi=100)
     axes = fig.add_subplot(1, 1, 1)
-    axes.axis([0, data.shape[0], vals['vmin'], vals['vmax']])
+    sampling = 1000.0 / float(vals['sampling'])
+
+    axes.axis([- (pre.shape[0] * sampling), data.shape[0]*sampling - (pre.shape[0] * sampling), vals['vmin'], vals['vmax']])
     axes.set_xlabel('time')
     axes.set_ylabel('num stdv')
     axes.set_title("%s - Event %03d - T=%f" % (exp, event, vals['event_time']))
     maxv = np.max(data)
     minv = np.min(data)
 
-    axes.plot(range(data.shape[0]), data, 'r')
-    axes.plot([disc1,disc1], [minv,maxv], 'b')
+    t = np.arange(0.0, data.shape[0])*sampling - (pre.shape[0] * sampling)
+    axes.xaxis.set_major_locator(ticker.MultipleLocator(100))
+    axes.yaxis.set_major_locator(ticker.MultipleLocator(2))
+
+
+    disc2 = int(vals['discard'] * 1000.0)
+
+    axes.plot(t, data, 'r')
+
+    axes.plot([0,0], [minv,maxv], 'b')
     axes.plot([disc2,disc2], [minv,maxv], 'b')
-    axes.plot([disc1,disc2], [maxv,maxv], 'b')
-    axes.plot([disc1,disc2], [minv,minv], 'b')
-    if mark[0] !=0:
+    axes.plot([0,disc2], [maxv,maxv], 'b')
+    axes.plot([0,disc2], [minv,minv], 'b')
+
+    ltn = int(vals['latency'] * 1000.0)
+    axes.plot([ltn, ltn], [maxv,minv], 'c')
+
+    if mark[0] != 0:
+        mark[0] = int(mark[0] * sampling) - (pre.shape[0] * sampling)
+        mark[1] = int(mark[1] * sampling) - (pre.shape[0] * sampling)
         axes.plot([mark[0],mark[1]], [maxv, maxv], 'g')
         axes.plot([mark[0],mark[1]], [minv, minv], 'g')
         axes.plot([mark[0],mark[0]], [maxv, minv], 'g')
         axes.plot([mark[1],mark[1]], [maxv, minv], 'g')
-    plt.legend()
+
+    axes.plot([0,data.shape[0]*sampling - (pre.shape[0] * sampling)], [vals['sigma'],vals['sigma'] ], 'y')
+    # plt.legend()
     plt.savefig(img, format='png')
     img.seek(0)
 
@@ -150,6 +164,19 @@ def graphic():
     plt.close()
 
     return render_template('SpikeView.html', plot_url=plot_url, exp=exp, event=event)
+
+
+@app.route('/Annotate', methods=['GET', 'POST'])
+def annotate():
+    """
+    Annotation of events
+    :return:
+    """
+    payload = request.form['annotation']
+
+    print payload
+
+    return ""
 
 
 @app.route('/Mark', methods=['GET', 'POST'])
