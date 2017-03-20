@@ -40,10 +40,13 @@ class Dataset:
         self.file = filename
         self.marks = None
         self.signal = None
+        self.orig_signal = None
         self.times = None
         self.events = None
         self.sampling = None
         self.eventsarray = None
+        self.eventsarray = None
+        self.orig_eventsarray = None
         self.threshold = None
         self.wbefore = None
         self.wafter = None
@@ -56,6 +59,7 @@ class Dataset:
         r = Spike2IO(filename=data_path + self.file + '.smr')
         seg = r.read_segment(lazy=False, cascade=True, )
         self.signal = seg.analogsignals[1].rescale('mV').magnitude
+        self.orig_signal = seg.analogsignals[1].rescale('mV').magnitude
         self.times = seg.analogsignals[1].times.rescale('s').magnitude
         if len(seg.spiketrains) == 1:
             ind = 0
@@ -93,6 +97,7 @@ class Dataset:
             # self.times = downsample(self.times, wlen)
 
             self.signal = resample_poly(self.signal, 10, int(factor * 10))
+            self.orig_signal = resample_poly(self.orig_signal, 10, int(factor * 10))
             self.times = resample_poly(self.times, 10, int(factor * 10))
 
             self.sampling = sampling
@@ -114,11 +119,13 @@ class Dataset:
         self.wafter = int(after * self.sampling)
         cursor = 0
         self.eventsarray = np.zeros((len(self.events), self.wbefore + self.wafter))
+        self.orig_eventsarray = np.zeros((len(self.events), self.wbefore + self.wafter))
         fail = []
         for i, ev in enumerate(self.events):
             cursor = lookup(cursor, ev)
             if ((cursor + self.wafter) < self.signal.shape[0]) and ((cursor - self.wbefore) > 0):
                 self.eventsarray[i] = np.array(self.signal[cursor - self.wbefore:cursor + self.wafter])
+                self.orig_eventsarray[i] = np.array(self.orig_signal[cursor - self.wbefore:cursor + self.wafter])
             else:
                 fail.append(i)
 
@@ -129,6 +136,7 @@ class Dataset:
             self.times = self.times[sel]
             self.events = self.events[sel]
             self.eventsarray = self.eventsarray[sel, :]
+            self.orig_eventsarray = self.orig_eventsarray[sel, :]
 
     def mark_spikes(self, threshold, offset):
         """

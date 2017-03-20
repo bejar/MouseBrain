@@ -36,7 +36,7 @@
         <td>{{data[net]['labels'][1]}}</td>
 
         <td>
-            <form action="/Experiment" method="post">
+            <form action="/Experiment/{{net}}" method="post">
                 <button type="submit" name="experiment" value={{net}}> Experiment</button>
             </form>
         </td>

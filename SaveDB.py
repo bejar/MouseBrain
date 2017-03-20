@@ -73,6 +73,7 @@ if __name__ == '__main__':
                 data.extract_events(1.5, 0.25)
                 data.mark_spikes(sigma, latencia + discard)
                 spikes = data.eventsarray
+                ospikes = data.orig_eventsarray
                 spmarks = data.marks
                 labels = data.assign_labels()
                 vmax = max(np.max(postdata), np.max(predata))
@@ -85,6 +86,7 @@ if __name__ == '__main__':
                                  'pre': Binary(cPickle.dumps(predata[i], protocol=2)),
                                  'post':  Binary(cPickle.dumps(postdata[i], protocol=2)),
                                  'spike':  Binary(cPickle.dumps(spikes[i], protocol=2)),
+                                 'ospike':  Binary(cPickle.dumps(ospikes[i], protocol=2)),
                                  'mark':  Binary(cPickle.dumps(spmarks[i], protocol=2)),
                                  'label': int(labels[i]),
                                  'sampling': data.sampling,

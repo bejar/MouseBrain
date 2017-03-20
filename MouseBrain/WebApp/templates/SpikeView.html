@@ -30,27 +30,27 @@
         <td>Event</td>
         <td>{{event}}</td>
     </tr>
+    <tr>
+        <td>Annotation</td>
+        <td>{{ann}}</td>
+    </tr>
 </table>
-
 <br>
 
-<form action="/Experiment" method="post">
-                <button type="submit" name="experiment" value={{exp}}> Go back</button>
-            </form>
+<a href="http://polaris.lsi.upc.edu:{{port}}/Experiment/{{exp}}">Go Back</a>
 
+
+<br>
+<br><form action="/Annotate/{{exp}}/{{event}}" method="post">
+    <input type="text" name="annotation">
+    <input type="submit" name="submit" value="Annotate">
+            </form>
 <br>
 
 <img src="data:image/png;base64, {{ plot_url }}">
 
-<br>
-Annotation: <form action="/Annotate" method="post">
-    <input type="text" name="annotation">
-    <input type="submit" name="submit" value="Send">
-            </form>
-<br>
-<form action="/Experiment" method="post">
-                <button type="submit" name="experiment" value={{exp}}> Go back</button>
-            </form>
 
+<a href="http://polaris.lsi.upc.edu:{{port}}/Experiment/{{exp}}">Go Back</a>
+<br>
 </body>
 </html>

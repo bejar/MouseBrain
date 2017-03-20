@@ -21,6 +21,7 @@
     <tr>
         <th>Event</th>
         <th>Label</th>
+        <th>Annotation</th>
         <th>View</th>
     </tr>
     {% for net in data|sort %}
@@ -31,16 +32,18 @@
         <td>{{net}}</td>
         {% endif %}
         <td>{{data[net]['label']}}</td>
+        <td>{{data[net]['annotation']}}</td>
         <td>
-            <form action="/View" method="post">
+            <form action="/View/{{exp}}/{{net}}" method="post">
                 <button type="submit" name="view" value={{net}}> View</button>
             </form>
         </td>
         <td>
-            <form action="/Mark" method="post">
+            <form action="/Mark/{{exp}}/{{net}}" method="post">
                 <button type="submit" name="mark" value={{net}}> Mark/Unmark</button>
             </form>
         </td>
+
      </tr>
     {% endfor %}
 </table>
