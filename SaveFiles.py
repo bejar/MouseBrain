@@ -40,9 +40,9 @@ if __name__ == '__main__':
             if data.sampling > 100.0:
                 data.downsample(256.4102564102564)
 
-                data.extract_events(2, 0.25)
+                data.extract_events(1.5, 0.25)
 
-                mat = data.get_events_data(discard=0.01, split=split, normalize=True)
+                mat = data.get_events_data(discard=0.025, split=split, normalize=True)
 
                 if split:
                    experiments.append(mat[0])
@@ -59,12 +59,18 @@ if __name__ == '__main__':
     nev = 0
     if split:
         ldatamat = np.concatenate(labels)
-        np.save(save_path + 'mouselabels.npy', ldatamat[ldatamat==0])
-        nev += ldatamat[ldatamat==0].shape[0]
+        np.save(save_path + 'mouselabels.npy', ldatamat[ldatamat == 0])
+        nev += ldatamat[ldatamat == 0].shape[0]
         datamat = np.concatenate(experiments)
-        np.save(save_path + 'mousepre.npy', datamat[ldatamat==0])
+        np.save(save_path + 'mousepre0.npy', datamat[ldatamat == 0])
+        np.savetxt(save_path + 'mousepre0.csv', datamat[ldatamat == 0], delimiter=';')
+        np.save(save_path + 'mousepre1.npy', datamat[ldatamat == 1])
+        np.savetxt(save_path + 'mousepre1.csv', datamat[ldatamat == 1], delimiter=';')
         datamat = np.concatenate(experiments2)
-        np.save(save_path + 'mousepost.npy', datamat[ldatamat==0])
+        np.save(save_path + 'mousepost0.npy', datamat[ldatamat == 0])
+        np.savetxt(save_path + 'mousepost0.csv', datamat[ldatamat == 0], delimiter=';')
+        np.save(save_path + 'mousepost1.npy', datamat[ldatamat == 1])
+        np.savetxt(save_path + 'mousepost1.csv', datamat[ldatamat == 1], delimiter=';')
 
     else:
         ldatamat = np.concatenate(labels)
