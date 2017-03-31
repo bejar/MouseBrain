@@ -250,6 +250,7 @@ class Dataset:
         else:
             vdiscard = 0
 
+        lid = [int(self.file[-3:]) *100 + i for i in range(self.eventsarray.shape[0])]
         prem = self.eventsarray[:, :self.wbefore - vdiscard]
         posm = self.eventsarray[:, self.wbefore + vdiscard:]
         join = np.column_stack((prem, posm))
@@ -261,9 +262,9 @@ class Dataset:
             posm = (posm - exmn) / exstd
 
         if split:
-            return prem, posm
+            return prem, posm, lid
         else:
-            return np.column_stack((prem, posm))
+            return np.column_stack((prem, posm)), lid
 
 
 if __name__ == '__main__':

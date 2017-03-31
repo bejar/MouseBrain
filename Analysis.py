@@ -55,7 +55,7 @@ def integral(pre, post):
     plt.show()
 
 
-def study(X,Y, title, wlenpre, wlenpos):
+def study(X,Y, ids, title, wlenpre, wlenpos):
     """
     Study of mouse events
     
@@ -80,6 +80,10 @@ def study(X,Y, title, wlenpre, wlenpos):
         lpreint.append(smax)
         lprepos.append(pos)
 
+    lpreint = np.array(lpreint)
+
+    sel = lpreint > 30
+
     lposint = []
     lpospos = []
     for i in range(Y.shape[0]):
@@ -94,17 +98,16 @@ def study(X,Y, title, wlenpre, wlenpos):
         lpospos.append(pos)
 
     fig = plt.figure(figsize=(30,10))
-
     ax = fig.add_subplot(131)
-    plt.scatter(lpreint, lintpost)
+    plt.scatter(lpreint, lintpost, c=sel)
     ax.set_xlabel('maxima integral ventana pre')
     ax.set_ylabel('Integral post')
     ax = fig.add_subplot(132)
-    plt.scatter(lprepos, lintpost)
+    plt.scatter(lprepos, lintpost, c=sel)
     ax.set_xlabel('posicion maxima integral ventana pre')
     ax.set_ylabel('Integral post')
     ax = fig.add_subplot(133)
-    plt.scatter(lprepos, lpreint)
+    plt.scatter(lprepos, lpreint, c=sel)
     ax.set_xlabel('posicion maxima integral ventana pre')
     ax.set_ylabel('maxima integral ventana pre')
     fig.suptitle(title + ' Wpr= '+str(wlenpre))
@@ -115,17 +118,18 @@ def study(X,Y, title, wlenpre, wlenpos):
     ax = fig.add_subplot(131)
     ax.set_xlabel('maxima integral ventana pre')
     ax.set_ylabel('maxima integral ventana post')
-    plt.scatter(lpreint, lposint)
+    plt.scatter(lpreint, lposint, c=sel)
     ax = fig.add_subplot(132)
     ax.set_xlabel('posicion maxima integral ventana pre')
     ax.set_ylabel('maxima integral ventana post')
-    plt.scatter(lprepos, lposint)
+    plt.scatter(lprepos, lposint, c=sel)
     ax = fig.add_subplot(133)
     ax.set_xlabel('posicion maxima integral ventana pre')
     ax.set_ylabel('posicion maxima integral ventana post')
-    plt.scatter(lprepos, lpospos)
-
+    plt.scatter(lprepos, lpospos, c=sel)
     plt.show()
+
+    print ids[sel]
     #
     # fig = plt.figure(figsize=(20,10))
     # ax = fig.add_subplot(121)
@@ -145,10 +149,11 @@ def study(X,Y, title, wlenpre, wlenpos):
 __author__ = 'bejar'
 
 if __name__ == '__main__':
-    col = ['r', 'y']
-    X = np.load(data_path + 'mousepre1.npy')
-    Y = np.load(data_path + 'mousepost1.npy')
-    study(X,Y, 'Evento positivo', 25, 25)
+    # X = np.load(data_path + 'mousepre1.npy')
+    # Y = np.load(data_path + 'mousepost1.npy')
+    # id = np.load(data_path + 'mouseids1.npy')
+    # study(X,Y, id, 'Evento positivo', 25, 25)
     X = np.load(data_path + 'mousepre0.npy')
     Y = np.load(data_path + 'mousepost0.npy')
-    study(X,Y, 'Evento Negativo', 25, 25)
+    id = np.load(data_path + 'mouseids0.npy')
+    study(X,Y, id, 'Evento Negativo', 25, 25)
