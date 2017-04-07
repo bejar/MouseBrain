@@ -80,7 +80,7 @@ if __name__ == '__main__':
                 vmin = min(np.min(postdata), np.min(predata))
 
                 for i in range(spikes.shape[0]):
-                    if labels[i] == 0:
+                    # if labels[i] == 0:
                         event = {'exp': file,
                                  'event': i,
                                  'pre': Binary(cPickle.dumps(predata[i], protocol=2)),
