@@ -17,32 +17,26 @@ ConvoTest
 
 """
 
+import StringIO
+import cPickle
 import socket
 
+import matplotlib
 from flask import Flask, render_template, request, url_for, redirect
 from pymongo import MongoClient
-import StringIO
 
-# import bokeh.plotting as plt
-
-import matplotlib
-import cPickle
-from bson.binary import Binary
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 
 import base64
-import seaborn as sns
 import numpy as np
-import pprint
-import time
 
 __author__ = 'bejar'
 
 # Configuration stuff
 hostname = socket.gethostname()
-port = 9000
+port = 8900
 
 app = Flask(__name__)
 
@@ -55,11 +49,11 @@ def info():
     client = MongoClient('mongodb://localhost:27017/')
     col = client.MouseBrain.Spikes
     vals = col.find({},
-                    {'_id': 1, 'exp': 1, 'event': 1, 'label': 1, 'check': 1, 'annotation':1})
+                    {'_id': 1, 'exp': 1, 'event': 1, 'label': 1, 'check': 1, 'annotation': 1})
     res = {}
     for v in vals:
         if v['exp'] not in res:
-            res[v['exp']] = {'ev_cnt': 1, 'labels': {0:0, 1:0}}
+            res[v['exp']] = {'ev_cnt': 1, 'labels': {0: 0, 1: 0}}
             res[v['exp']]['labels'][v['label']] = 1
         else:
             res[v['exp']]['ev_cnt'] += 1
@@ -76,7 +70,7 @@ def experiment(exp):
     Experimento
     """
 
-    payload = exp #request.form['experiment']
+    payload = exp  # request.form['experiment']
     client = MongoClient('mongodb://localhost:27017/')
     col = client.MouseBrain.Spikes
     vals = col.find({'exp': payload},
@@ -91,7 +85,7 @@ def experiment(exp):
         annotation = ''
         if 'annotation' in v:
             annotation = v['annotation']
-        res['%03d' % v['event']] = {'event': v['event'], 'label': v['label'], 'check': mark, 'annotation': annotation }
+        res['%03d' % v['event']] = {'event': v['event'], 'label': v['label'], 'check': mark, 'annotation': annotation}
 
     return render_template('EventsList.html', data=res, exp=payload, port=port)
 
@@ -111,9 +105,10 @@ def graphic(exp, event):
     client = MongoClient('mongodb://localhost:27017/')
     col = client.MouseBrain.Spikes
 
-    vals = col.find_one({'exp': exp, 'event': event}, {'spike': 1, 'ospike': 1, 'mark': 1, 'event_time': 1, 'pre':1, 'post': 1,
-                                                       'vmax':1, 'vmin':1, 'sampling':1, 'sigma':1, 'latency': 1,
-                                                       'discard': 1, 'annotation': 1})
+    vals = col.find_one({'exp': exp, 'event': event},
+                        {'spike': 1, 'ospike': 1, 'mark': 1, 'event_time': 1, 'pre': 1, 'post': 1,
+                         'vmax': 1, 'vmin': 1, 'sampling': 1, 'sigma': 1, 'latency': 1,
+                         'discard': 1, 'annotation': 1})
 
     data = cPickle.loads(vals['spike'])
     odata = cPickle.loads(vals['ospike'])
@@ -128,50 +123,51 @@ def graphic(exp, event):
     axes = fig.add_subplot(nrows, 1, 1)
     sampling = 1000.0 / float(vals['sampling'])
 
-    axes.axis([- (pre.shape[0] * sampling), data.shape[0]*sampling - (pre.shape[0] * sampling), vals['vmin'], vals['vmax']])
+    axes.axis(
+        [- (pre.shape[0] * sampling), data.shape[0] * sampling - (pre.shape[0] * sampling), vals['vmin'], vals['vmax']])
     axes.set_xlabel('time')
     axes.set_ylabel('num stdv')
     axes.set_title("%s - Event %03d - T=%f" % (exp, event, vals['event_time']))
     maxvg = np.max(data)
     minvg = np.min(data)
 
-    t = np.arange(0.0, data.shape[0])*sampling - (pre.shape[0] * sampling)
+    t = np.arange(0.0, data.shape[0]) * sampling - (pre.shape[0] * sampling)
     axes.xaxis.set_major_locator(ticker.MultipleLocator(100))
     axes.yaxis.set_major_locator(ticker.MultipleLocator(2))
     disc2 = int(vals['discard'] * 1000.0)
     axes.plot(t, data, 'r')
-    axes.plot([0,0], [minvg,maxvg], 'b')
-    axes.plot([disc2,disc2], [minvg,maxvg], 'b')
-    axes.plot([0,disc2], [maxvg,maxvg], 'b')
-    axes.plot([0,disc2], [minvg,minvg], 'b')
+    axes.plot([0, 0], [minvg, maxvg], 'b')
+    axes.plot([disc2, disc2], [minvg, maxvg], 'b')
+    axes.plot([0, disc2], [maxvg, maxvg], 'b')
+    axes.plot([0, disc2], [minvg, minvg], 'b')
 
     ltn = int(vals['latency'] * 1000.0)
-    axes.plot([ltn, ltn], [maxvg,minvg], 'c')
+    axes.plot([ltn, ltn], [maxvg, minvg], 'c')
 
     if mark[0] != 0:
         mark[0] = int(mark[0] * sampling) - (pre.shape[0] * sampling)
         mark[1] = int(mark[1] * sampling) - (pre.shape[0] * sampling)
-        axes.plot([mark[0],mark[1]], [maxvg, maxvg], 'g')
-        axes.plot([mark[0],mark[1]], [minvg, minvg], 'g')
-        axes.plot([mark[0],mark[0]], [maxvg, minvg], 'g')
-        axes.plot([mark[1],mark[1]], [maxvg, minvg], 'g')
-    axes.plot([0,data.shape[0]*sampling - (pre.shape[0] * sampling)], [vals['sigma'],vals['sigma'] ], 'y')
+        axes.plot([mark[0], mark[1]], [maxvg, maxvg], 'g')
+        axes.plot([mark[0], mark[1]], [minvg, minvg], 'g')
+        axes.plot([mark[0], mark[0]], [maxvg, minvg], 'g')
+        axes.plot([mark[1], mark[1]], [maxvg, minvg], 'g')
+    axes.plot([0, data.shape[0] * sampling - (pre.shape[0] * sampling)], [vals['sigma'], vals['sigma']], 'y')
     # plt.legend()
 
     maxv = np.max(odata)
     minv = np.min(odata)
     axes2 = fig.add_subplot(nrows, 1, 2)
-    axes2.axis([- (pre.shape[0] * sampling), data.shape[0]*sampling - (pre.shape[0] * sampling), minv, maxv])
+    axes2.axis([- (pre.shape[0] * sampling), data.shape[0] * sampling - (pre.shape[0] * sampling), minv, maxv])
     axes2.set_xlabel('time')
     axes2.set_ylabel('mV')
     axes2.xaxis.set_major_locator(ticker.MultipleLocator(100))
-    t = np.arange(0.0, data.shape[0])*sampling - (pre.shape[0] * sampling)
+    t = np.arange(0.0, data.shape[0]) * sampling - (pre.shape[0] * sampling)
     axes2.plot(t, odata, 'r')
-    axes2.plot([0,0], [minv,maxv], 'b')
-    axes2.plot([ltn, ltn], [maxv,minv], 'c')
+    axes2.plot([0, 0], [minv, maxv], 'b')
+    axes2.plot([ltn, ltn], [maxv, minv], 'c')
 
     axes3 = fig.add_subplot(nrows, 2, 5)
-    axes3.axis([0,  (pre.shape[0] * sampling), minvg, maxvg])
+    axes3.axis([0, (pre.shape[0] * sampling), minvg, maxvg])
     t = np.arange(0.0, pre.shape[0]) * sampling
     axes3.plot(t, pre)
 
@@ -179,17 +175,17 @@ def graphic(exp, event):
     wlenpre = 25
     smax = 0
     pos = 0
-    for j in range(pre.shape[0]-wlenpre):
-        sact = np.sum(np.abs(pre[j:j+wlenpre]))
+    for j in range(pre.shape[0] - wlenpre):
+        sact = np.sum(np.abs(pre[j:j + wlenpre]))
         if sact > smax:
             smax = sact
             pos = j
 
-    axes3.plot([pos * sampling, pos * sampling], [maxvg,minvg], 'r')
-    axes3.plot([(pos+wlenpre) * sampling, (pos+wlenpre) * sampling], [maxvg,minvg], 'r')
+    axes3.plot([pos * sampling, pos * sampling], [maxvg, minvg], 'r')
+    axes3.plot([(pos + wlenpre) * sampling, (pos + wlenpre) * sampling], [maxvg, minvg], 'r')
 
     axes4 = fig.add_subplot(nrows, 2, 6)
-    axes4.axis([0,  (post.shape[0] * sampling), minvg, maxvg])
+    axes4.axis([0, (post.shape[0] * sampling), minvg, maxvg])
 
     t = np.arange(0.0, post.shape[0]) * sampling
     axes4.plot(t, post)
@@ -198,13 +194,13 @@ def graphic(exp, event):
     # wlenpre = 40
     smax = 0
     pos = 6
-    for j in range(6, post.shape[0]-wlenpre):
-        sact = np.sum(np.abs(post[j:j+wlenpre]))
+    for j in range(6, post.shape[0] - wlenpre):
+        sact = np.sum(np.abs(post[j:j + wlenpre]))
         if sact > smax:
             smax = sact
             pos = j
-    axes4.plot([pos * sampling, pos * sampling], [maxvg,minvg], 'r')
-    axes4.plot([(pos + wlenpre) * sampling, (pos + wlenpre) * sampling], [maxvg,minvg], 'r')
+    axes4.plot([pos * sampling, pos * sampling], [maxvg, minvg], 'r')
+    axes4.plot([(pos + wlenpre) * sampling, (pos + wlenpre) * sampling], [maxvg, minvg], 'r')
 
     from scipy.signal import hilbert
 
@@ -214,7 +210,7 @@ def graphic(exp, event):
     maxv = np.max(envpre)
     minv = np.min(envpre)
 
-    axes5.axis([0,  (pre.shape[0] * sampling), minv, maxv])
+    axes5.axis([0, (pre.shape[0] * sampling), minv, maxv])
     t = np.arange(0.0, pre.shape[0]) * sampling
     axes5.plot(t, envpre)
 
@@ -224,26 +220,26 @@ def graphic(exp, event):
     maxv = np.max(envpost)
     minv = np.min(envpost)
 
-    axes6.axis([0,  (post.shape[0] * sampling), minv, maxv])
+    axes6.axis([0, (post.shape[0] * sampling), minv, maxv])
 
     t = np.arange(0.0, post.shape[0]) * sampling
     axes6.plot(t, envpost)
 
     axes7 = fig.add_subplot(nrows, 2, 9)
     ip_pre = np.unwrap(np.angle(a_pre))
-    if_pre = np.diff(ip_pre)/(2*np.pi)*sampling
+    if_pre = np.diff(ip_pre) / (2 * np.pi) * sampling
     maxv = np.max(if_pre)
     minv = np.min(if_pre)
-    axes7.axis([0,  (pre.shape[0] * sampling), minv, maxv])
+    axes7.axis([0, (pre.shape[0] * sampling), minv, maxv])
     t = np.arange(0.0, pre.shape[0]) * sampling
     axes7.plot(t[1:], if_pre)
 
     axes8 = fig.add_subplot(nrows, 2, 10)
     ip_post = np.unwrap(np.angle(a_post))
-    if_post = np.diff(ip_post)/(2*np.pi)*sampling
+    if_post = np.diff(ip_post) / (2 * np.pi) * sampling
     maxv = np.max(if_post)
     minv = np.min(if_post)
-    axes8.axis([0,  (post.shape[0] * sampling), minv, maxv])
+    axes8.axis([0, (post.shape[0] * sampling), minv, maxv])
     t = np.arange(0.0, post.shape[0]) * sampling
     axes8.plot(t[1:], if_post)
 
@@ -273,7 +269,7 @@ def annotate(exp, event):
 
     client = MongoClient('mongodb://localhost:27017/')
     col = client.MouseBrain.Spikes
-    vals = col.find_one({'exp': exp, 'event': int(event)}, {'_id':1, 'check': 1})
+    vals = col.find_one({'exp': exp, 'event': int(event)}, {'_id': 1, 'check': 1})
     col.update({'_id': vals['_id']}, {'$set': {'annotation': payload}})
 
     return redirect(url_for('.graphic', exp=exp, event=event))
@@ -292,7 +288,7 @@ def mark(exp, event):
     client = MongoClient('mongodb://localhost:27017/')
     col = client.MouseBrain.Spikes
 
-    vals = col.find_one({'exp': exp, 'event': event}, {'_id':1, 'check': 1})
+    vals = col.find_one({'exp': exp, 'event': event}, {'_id': 1, 'check': 1})
     if not 'check' in vals:
         marked = True
     else:
@@ -301,6 +297,7 @@ def mark(exp, event):
     col.update({'_id': vals['_id']}, {'$set': {'check': marked}})
 
     return redirect(url_for('.experiment', exp=exp))
+
 
 if __name__ == '__main__':
     # The Flask Server is started

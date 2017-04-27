@@ -54,7 +54,7 @@ if __name__ == '__main__':
                 data.downsample(256.4102564102564)
                 # data.show_signal()
 
-                data.extract_events(1.5, 0.25)
+                data.extract_events(1.5, 0.5)
 
                 # data.mark_spikes(2, 0.05)
                 #
@@ -70,7 +70,7 @@ if __name__ == '__main__':
                 data = Dataset(file)
                 data.read(normalize=True)
                 data.downsample(256.4102564102564)
-                data.extract_events(1.5, 0.25)
+                data.extract_events(1.5, 0.5)
                 data.mark_spikes(sigma, latencia + discard)
                 spikes = data.eventsarray
                 ospikes = data.orig_eventsarray
@@ -100,4 +100,3 @@ if __name__ == '__main__':
                                  'discard': discard}
 
                         col.insert(event)
-
