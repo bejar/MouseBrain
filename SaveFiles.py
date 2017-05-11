@@ -35,7 +35,10 @@ if __name__ == '__main__':
     labels = []
     ids = []
     for file in files:
-        if file not in ['Exp006'] and file in ['Exp%03d' % i for i in range(30, 73)]:
+        if file not in ['Exp006'] \
+                and (file in ['Exp%03d' % i for i in range(26, 105)]\
+                or file in ['Exp%03d' % i for i in range(7, 13)]\
+                or file in ['Exp%03d' % i for i in range(16, 21)]):
             # if file in ['Exp019', 'Exp020', 'Exp021', 'Exp022', 'Exp013', 'Exp014', 'Exp015']:
             data = Dataset(file)
             data.read(normalize=False)
@@ -59,6 +62,7 @@ if __name__ == '__main__':
                 data.downsample(256.4102564102564)
                 data.extract_events(1.5, 0.5)
                 data.mark_spikes(1.75, 0.035)
+                data.mark_pre_events()
                 labels.append(data.assign_labels())
                 ids.append(lid)
     nev = 0
@@ -66,23 +70,19 @@ if __name__ == '__main__':
     ldatamat = np.concatenate(labels)
 
     if split:
-
-        nev += ldatamat[ldatamat == 0].shape[0]
         ids = np.concatenate(ids)
-        np.save(save_path + 'mouseids0.npy', ids[ldatamat == 0])
-        np.save(save_path + 'mouseids1.npy', ids[ldatamat == 1])
-
         datamat = np.concatenate(experiments)
-        np.save(save_path + 'mousepre0.npy', datamat[ldatamat == 0])
-        np.savetxt(save_path + 'mousepre0.csv', datamat[ldatamat == 0], delimiter=';')
-        np.save(save_path + 'mousepre1.npy', datamat[ldatamat == 1])
-        np.savetxt(save_path + 'mousepre1.csv', datamat[ldatamat == 1], delimiter=';')
+        datamat2 = np.concatenate(experiments2)
+        for dl in np.unique(ldatamat):
+            nev += ldatamat[ldatamat == dl].shape[0]
+            np.save(save_path + 'mouseids'+str(dl)+'.npy', ids[ldatamat == dl])
 
-        datamat = np.concatenate(experiments2)
-        np.save(save_path + 'mousepost0.npy', datamat[ldatamat == 0])
-        np.savetxt(save_path + 'mousepost0.csv', datamat[ldatamat == 0], delimiter=';')
-        np.save(save_path + 'mousepost1.npy', datamat[ldatamat == 1])
-        np.savetxt(save_path + 'mousepost1.csv', datamat[ldatamat == 1], delimiter=';')
+            np.save(save_path + 'mousepre'+str(dl)+'.npy', datamat[ldatamat == dl])
+            np.savetxt(save_path + 'mousepre'+str(dl)+'.csv', datamat[ldatamat == dl], delimiter=';')
+
+            np.save(save_path + 'mousepost'+str(dl)+'.npy', datamat2[ldatamat == dl])
+            np.savetxt(save_path + 'mousepost'+str(dl)+'.csv', datamat2[ldatamat == dl], delimiter=';')
+
 
     else:
         np.save(save_path + 'mouselabels.npy', ldatamat[ldatamat == 0])

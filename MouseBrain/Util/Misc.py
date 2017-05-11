@@ -42,7 +42,7 @@ def reduceseg(lval, tol):
 def max_integral(signal, wlen):
     """
     Return the integral and the position of the window with maximal integral
-    integral = sum of the absulute value of the signal  
+    integral = sum of the absolute value of the signal  
      
     :param wlen: 
     :return: 

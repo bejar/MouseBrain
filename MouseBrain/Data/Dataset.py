@@ -38,13 +38,13 @@ class Dataset:
         """
 
         self.file = filename
-        self.marks = None
+        self.post_marks = None
+        self.pre_marks = None
         self.signal = None
         self.orig_signal = None
         self.times = None
         self.events = None
         self.sampling = None
-        self.eventsarray = None
         self.eventsarray = None
         self.orig_eventsarray = None
         self.threshold = None
@@ -148,23 +148,56 @@ class Dataset:
         """
 
         self.threshold = threshold
-        self.marks = np.zeros((len(self.events), 2), dtype=int)
+        self.post_marks = np.zeros((len(self.events), 2), dtype=int)
         ahead = int(self.sampling * offset)
         for i in range(len(self.events)):
             for j in range(self.wbefore + ahead, self.eventsarray.shape[1]):
-                if self.eventsarray[i, j] > threshold and self.marks[i, 0] == 0:
-                    self.marks[i, 0] = j
-                if self.eventsarray[i, j] < threshold and self.marks[i, 0] != 0 and self.marks[i, 1] == 0:
-                    self.marks[i, 1] = j
-            if self.marks[i, 1] == 0 and self.marks[i, 0] != 0:
-                self.marks[i, 1] = self.eventsarray.shape[1] - 5
+                if self.eventsarray[i, j] > threshold and self.post_marks[i, 0] == 0:
+                    self.post_marks[i, 0] = j
+                if self.eventsarray[i, j] < threshold and self.post_marks[i, 0] != 0 and self.post_marks[i, 1] == 0:
+                    self.post_marks[i, 1] = j
+            if self.post_marks[i, 1] == 0 and self.post_marks[i, 0] != 0:
+                self.post_marks[i, 1] = self.eventsarray.shape[1] - 5
+
+    def mark_pre_events(self):
+        """
+        Stores the positions of the before the event that has a value higher than threshold
+        :param threshold: 
+        :return: 
+        """
+        if self.threshold is None:
+            raise Exception('Threshold not set')
+        else:
+            threshold = self.threshold
+            self.pre_marks = np.zeros((len(self.events), 2), dtype=int)
+
+            for i in range(len(self.events)):
+                for j in range(self.wbefore):
+                    if self.eventsarray[i, j] > threshold and self.pre_marks[i, 0] == 0:
+                        self.pre_marks[i, 0] = j
+                    if self.eventsarray[i, j] < threshold and self.pre_marks[i, 0] != 0 and self.pre_marks[i, 1] == 0:
+                        self.pre_marks[i, 1] = j
+                if self.pre_marks[i, 1] == 0 and self.post_marks[i, 0] != 0:
+                    self.pre_marks[i, 1] = self.wbefore
 
     def assign_labels(self):
         """
         Returns the labels for the spikes (0 or 1 whether there is a spike large enough after the event
         :return:
         """
-        return np.array([0 if mark[0] == 0 else 1 for mark in self.marks])
+        if self.post_marks is None or self.pre_marks is None:
+            raise Exception('Events not marked')
+        else:
+            labels = []
+
+            for i in range(len(self.events)):
+                if self.post_marks[i,0] == 0:
+                    labels.append(0)
+                elif self.pre_marks[i,0] == 0:
+                    labels.append(1)
+                else:
+                    labels.append(2)
+            return labels
 
     def show_signal(self, begin=None, end=None):
         """
@@ -231,9 +264,9 @@ class Dataset:
         t = np.arange(0.0, num, 1)
         sp1.plot(t, self.eventsarray[ev], 'b')
         sp1.plot([self.wbefore, self.wbefore], [minaxis, maxaxis], 'r')
-        if self.marks is not None and self.marks[ev, 0] != 0:
-            tm = np.arange(self.marks[ev, 0] - 5, self.marks[ev, 1] + 5, 1)
-            val = np.zeros(self.marks[ev, 1] - self.marks[ev, 0] + 10) + self.threshold
+        if self.post_marks is not None and self.post_marks[ev, 0] != 0:
+            tm = np.arange(self.post_marks[ev, 0] - 5, self.post_marks[ev, 1] + 5, 1)
+            val = np.zeros(self.post_marks[ev, 1] - self.post_marks[ev, 0] + 10) + self.threshold
             sp1.plot(tm, val, 'r')
         plt.show()
         plt.close()
@@ -250,7 +283,7 @@ class Dataset:
         else:
             vdiscard = 0
 
-        lid = [int(self.file[-3:]) *100 + i for i in range(self.eventsarray.shape[0])]
+        lid = [int(self.file[-3:]) * 100 + i for i in range(self.eventsarray.shape[0])]
         prem = self.eventsarray[:, :self.wbefore - vdiscard]
         posm = self.eventsarray[:, self.wbefore + vdiscard:]
         join = np.column_stack((prem, posm))

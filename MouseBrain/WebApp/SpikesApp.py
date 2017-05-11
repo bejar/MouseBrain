@@ -53,7 +53,7 @@ def info():
     res = {}
     for v in vals:
         if v['exp'] not in res:
-            res[v['exp']] = {'ev_cnt': 1, 'labels': {0: 0, 1: 0}}
+            res[v['exp']] = {'ev_cnt': 1, 'labels': {0: 0, 1: 0, 2: 0}}
             res[v['exp']]['labels'][v['label']] = 1
         else:
             res[v['exp']]['ev_cnt'] += 1
@@ -106,7 +106,7 @@ def graphic(exp, event):
     col = client.MouseBrain.Spikes
 
     vals = col.find_one({'exp': exp, 'event': event},
-                        {'spike': 1, 'ospike': 1, 'mark': 1, 'event_time': 1, 'pre': 1, 'post': 1,
+                        {'spike': 1, 'ospike': 1, 'mark': 1, 'premark': 1, 'event_time': 1, 'pre': 1, 'post': 1,
                          'vmax': 1, 'vmin': 1, 'sampling': 1, 'sigma': 1, 'latency': 1,
                          'discard': 1, 'annotation': 1})
 
@@ -114,7 +114,8 @@ def graphic(exp, event):
     odata = cPickle.loads(vals['ospike'])
     pre = cPickle.loads(vals['pre'])
     post = cPickle.loads(vals['post'])
-    mark = cPickle.loads(vals['mark'])
+    postmark = cPickle.loads(vals['mark'])
+    premark = cPickle.loads(vals['premark'])
     nrows = 6
 
     img = StringIO.StringIO()
@@ -144,14 +145,22 @@ def graphic(exp, event):
     ltn = int(vals['latency'] * 1000.0)
     axes.plot([ltn, ltn], [maxvg, minvg], 'c')
 
-    if mark[0] != 0:
-        mark[0] = int(mark[0] * sampling) - (pre.shape[0] * sampling)
-        mark[1] = int(mark[1] * sampling) - (pre.shape[0] * sampling)
-        axes.plot([mark[0], mark[1]], [maxvg, maxvg], 'g')
-        axes.plot([mark[0], mark[1]], [minvg, minvg], 'g')
-        axes.plot([mark[0], mark[0]], [maxvg, minvg], 'g')
-        axes.plot([mark[1], mark[1]], [maxvg, minvg], 'g')
-    axes.plot([0, data.shape[0] * sampling - (pre.shape[0] * sampling)], [vals['sigma'], vals['sigma']], 'y')
+    if postmark[0] != 0:
+        postmark[0] = int(postmark[0] * sampling) - (pre.shape[0] * sampling)
+        postmark[1] = int(postmark[1] * sampling) - (pre.shape[0] * sampling)
+        axes.plot([postmark[0], postmark[1]], [maxvg, maxvg], 'g')
+        axes.plot([postmark[0], postmark[1]], [minvg, minvg], 'g')
+        axes.plot([postmark[0], postmark[0]], [maxvg, minvg], 'g')
+        axes.plot([postmark[1], postmark[1]], [maxvg, minvg], 'g')
+    if premark[0] != 0:
+        premark[0] = int(premark[0] * sampling) - (pre.shape[0] * sampling)
+        premark[1] = int(premark[1] * sampling) - (pre.shape[0] * sampling)
+        axes.plot([premark[0], premark[1]], [maxvg, maxvg], 'k')
+        axes.plot([premark[0], premark[1]], [minvg, minvg], 'k')
+        axes.plot([premark[0], premark[0]], [maxvg, minvg], 'k')
+        axes.plot([premark[1], premark[1]], [maxvg, minvg], 'k')
+
+    axes.plot([- (pre.shape[0] * sampling), data.shape[0] * sampling - (pre.shape[0] * sampling)], [vals['sigma'], vals['sigma']], 'y')
     # plt.legend()
 
     maxv = np.max(odata)

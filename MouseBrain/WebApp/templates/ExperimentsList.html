@@ -22,6 +22,7 @@
         <th>Num Events</th>
         <th>Events/Class 0</th>
         <th>Events/Class 1</th>
+        <th>Events/Class 2</th>
         <th>View</th>
     </tr>
     {% for net in data|sort %}
@@ -34,6 +35,7 @@
         <td>{{data[net]['ev_cnt']}}</td>
         <td>{{data[net]['labels'][0]}}</td>
         <td>{{data[net]['labels'][1]}}</td>
+        <td>{{data[net]['labels'][2]}}</td>
 
         <td>
             <form action="/Experiment/{{net}}" method="post">

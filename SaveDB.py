@@ -41,7 +41,7 @@ if __name__ == '__main__':
     experiments2 = []
     labels = []
 
-    sigma = 1.5
+    sigma = 1.75
     latencia = 0.025
     discard = 0.01
     for file in files:
@@ -72,9 +72,12 @@ if __name__ == '__main__':
                 data.downsample(256.4102564102564)
                 data.extract_events(1.5, 0.5)
                 data.mark_spikes(sigma, latencia + discard)
+                data.mark_pre_events()
+
                 spikes = data.eventsarray
                 ospikes = data.orig_eventsarray
-                spmarks = data.marks
+                spostmarks = data.post_marks
+                spremarks = data.pre_marks
                 labels = data.assign_labels()
                 vmax = max(np.max(postdata), np.max(predata))
                 vmin = min(np.min(postdata), np.min(predata))
@@ -87,7 +90,8 @@ if __name__ == '__main__':
                                  'post':  Binary(cPickle.dumps(postdata[i], protocol=2)),
                                  'spike':  Binary(cPickle.dumps(spikes[i], protocol=2)),
                                  'ospike':  Binary(cPickle.dumps(ospikes[i], protocol=2)),
-                                 'mark':  Binary(cPickle.dumps(spmarks[i], protocol=2)),
+                                 'mark':  Binary(cPickle.dumps(spostmarks[i], protocol=2)),
+                                 'premark':  Binary(cPickle.dumps(spremarks[i], protocol=2)),
                                  'label': int(labels[i]),
                                  'sampling': data.sampling,
                                  'wbefore': data.wbefore,

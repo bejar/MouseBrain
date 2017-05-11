@@ -54,8 +54,43 @@ def integral(pre, post):
     plt.scatter(lintpre, lintpost)
     plt.show()
 
+def plot_positions(eleft, eright, axes, data, mxstd, tol=2, eclass=True):
+    """
+    Plots the data for the pre and post events
+    :param eleft: 
+    :param eright: 
+    :param ax1: 
+    :param ax2: 
+    :param data: 
+    :param mxstd: 
+    :param tol: 
+    :param eclass: 
+    :return: 
+    """
+    print '------------ %d < %d' % (eleft, eright)
+    ax1, ax2, ax3, ax4 = axes
+    ax1.plot([0, 0], [0, 180], 'k')
+    ax2.plot([0, 0], [0, 180], 'k')
+    lprepos, lpreint, lpospos, lposint = data
+    for ip, (prep, prei, posp, posi) in enumerate(zip(lprepos, lpreint, lpospos, lposint)):
+        if eleft < prep < eright:
+            if (eclass and prei > posi) or (not eclass and prei < posi):
+                ax1.plot([prep, posp], [prei, posi], 'g:')
 
-def study2(X, Y, ids, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4):
+                cm = 'k' if mxstd[ip] > tol else 'b'
+                ax1.plot([prep], [prei], cm, marker='o')
+                ax1.plot([posp], [posi], 'b', marker='o')
+                print(id[ip], prei, posi)
+                ax3.plot(prei, posi, 'b', marker='o')
+
+            else:
+                cm = 'k' if mxstd[ip] > tol else 'y'
+                ax2.plot([prep], [prei], cm, marker='o')
+                ax2.plot([posp], [posi], 'y', marker='o')
+                ax2.plot([prep, posp], [prei, posi], 'r:')
+                ax4.plot(prei, posi, 'b', marker='o')
+
+def study2(X, Y, ids, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4, method='integral'):
     """
     Study of mouse events
     
@@ -63,26 +98,6 @@ def study2(X, Y, ids, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4
     :param Y: 
     :return: 
     """
-
-    def plot_positions(eleft, eright, ax1, ax2, mxstd, tol=2):
-        print '------------ %d < %d' % (eleft, eright)
-        ax1.plot([0, 0], [0, 180], 'k')
-        ax2.plot([0, 0], [0, 180], 'k')
-        for ip, (prep, prei, posp, posi) in enumerate(zip(lprepos, lpreint, lpospos, lposint)):
-            if eleft < prep < eright:
-                if (eclass and prei > posi) or (not eclass and prei < posi):
-                    ax1.plot([prep, posp], [prei, posi], 'g:')
-
-                    cm = 'k' if mxstd[ip] > tol else 'b'
-                    ax1.plot([prep], [prei], cm, marker='o')
-                    ax1.plot([posp], [posi], 'b', marker='o')
-                    print(id[ip], prei, posi)
-                else:
-                    cm = 'k' if mxstd[ip] > tol else 'y'
-                    ax2.plot([prep], [prei], cm, marker='o')
-                    ax2.plot([posp], [posi], 'y', marker='o')
-                    ax2.plot([prep, posp], [prei, posi], 'r:')
-
     postmid = int(Y.shape[0])
     lintpre = [np.sum(np.abs(X[i])) for i in range(X.shape[0])]
     lintpost = [np.sum(np.abs(Y[i, 0:postmid])) for i in range(Y.shape[0])]
@@ -90,15 +105,22 @@ def study2(X, Y, ids, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4
     lpreint = []
     lprepos = []
     lpremxstd = []
-    for i in range(X.shape[0]):
-
-        smax, pos, lint = max_integral(X[i], wlenpre)
-        lpreint.append(smax)
-        lprepos.append(pos + (wlenpre / 2))
-        lint = np.array(lint)
-        smax = reduceseg(argrelextrema(lint, np.greater_equal, order=3)[0], 1)
-        mxvals = lint[smax]
-        lpremxstd.append(np.std(mxvals))
+    if method == 'integral':
+        for i in range(X.shape[0]):
+            smax, pos, lint = max_integral(X[i], wlenpre)
+            lpreint.append(smax)
+            lprepos.append(pos + (wlenpre / 2))
+            lint = np.array(lint)
+            smax = reduceseg(argrelextrema(lint, np.greater_equal, order=3)[0], 1)
+            mxvals = lint[smax]
+            lpremxstd.append(np.std(mxvals))
+    elif method == 'max':
+        for i in range(X.shape[0]):
+            smax = np.max(X[i,:])
+            pos = np.argmax(X[i,:])
+            lpreint.append(smax)
+            lprepos.append(pos)
+            lpremxstd.append(0)
 
     lpreint = np.array(lpreint)
 
@@ -106,36 +128,42 @@ def study2(X, Y, ids, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4
 
     lposint = []
     lpospos = []
-    for i in range(Y.shape[0]):
-        smax, pos, _ = max_integral(np.abs(Y[i]), wlenpre)
-        lposint.append(smax)
-        lpospos.append(pos + (wlenpos / 2))
-
-    fig = plt.figure(figsize=(10, 40))
+    if method == 'integral':
+        for i in range(Y.shape[0]):
+            smax, pos, _ = max_integral(np.abs(Y[i]), wlenpre)
+            lposint.append(smax)
+            lpospos.append(pos + (wlenpos / 2))
+    elif method == 'max':
+        for i in range(Y.shape[0]):
+            smax = np.max(Y[i,:])
+            pos = np.argmax(Y[i,:])
+            lposint.append(smax)
+            lpospos.append(pos)
 
     wtpre = wlenpre * (1000 / freq)
     wtpos = wlenpos * (1000 / freq)
-
     lprepos = (np.array(lprepos) * (1000 / freq)) - (1500 - (wtpre / 2))
     lpospos = np.array(lpospos) * (1000 / freq) + (off * 1000)
 
-    ax1 = fig.add_subplot(321)
-    ax1.axis([-1500, 500, 0, 180])
-    ax2 = fig.add_subplot(322)
-    ax2.axis([-1500, 500, 0, 180])
-    plot_positions(-1500, -1000, ax1, ax2, lpremxstd, tol=tol)
+    fig = plt.figure(figsize=(20, 20))
 
-    ax1 = fig.add_subplot(323)
-    ax1.axis([-1500, 500, 0, 180])
-    ax2 = fig.add_subplot(324)
-    ax2.axis([-1500, 500, 0, 180])
-    plot_positions(-1000, -500, ax1, ax2, lpremxstd, tol=tol)
 
-    ax1 = fig.add_subplot(325)
-    ax1.axis([-1500, 500, 0, 180])
-    ax2 = fig.add_subplot(326)
-    ax2.axis([-1500, 500, 0, 180])
-    plot_positions(-500, 0, ax1, ax2, lpremxstd, tol=tol)
+    maxrange = np.max([np.max(lposint), np.max(lpreint)])
+    maxrangeX = np.max(lpreint)
+    maxrangeY = np.max(lposint)
+
+    for p, lim in enumerate([-1500, -1000, -500]):
+        ax1 = fig.add_subplot(3, 4, (p*4)+1)
+        ax1.axis([-1500, 500, 0, maxrange])
+        ax2 = fig.add_subplot(3, 4, (p*4)+2)
+        ax2.axis([-1500, 500, 0, maxrange])
+        ax3 = fig.add_subplot(3, 4, (p*4)+3)
+        ax3.axis([0, maxrangeX, 0, maxrangeY])
+        ax4 = fig.add_subplot(3, 4, (p*4)+4)
+        ax4.axis([0, maxrangeX, 0, maxrangeY])
+
+
+        plot_positions(lim, lim+500, [ax1, ax2, ax3, ax4], data=(lprepos, lpreint, lpospos, lposint), mxstd=lpremxstd, tol=tol, eclass=eclass)
 
     plt.show()
 
@@ -233,12 +261,22 @@ def study(X, Y, ids, title, wlenpre, wlenpos):
 
 
 if __name__ == '__main__':
+
+    method = 'max' # 'max integral
+    winlen = 10
     X = np.load(data_path + 'mousepre1.npy')
     Y = np.load(data_path + 'mousepost1.npy')
     id = np.load(data_path + 'mouseids1.npy')
-    study2(X, Y, id, 'Evento Positivo', 25, 25, off=0.035, freq=256.4102564102564, eclass=True, tol=4)
+    study2(X, Y, id, 'Evento Positivo', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=True, tol=4, method=method)
+
     X = np.load(data_path + 'mousepre0.npy')
     Y = np.load(data_path + 'mousepost0.npy')
     print(X.shape, Y.shape)
     id = np.load(data_path + 'mouseids0.npy')
-    study2(X, Y, id, 'Evento Negativo', 25, 25, off=0.035, freq=256.4102564102564, eclass=False, tol=4)
+    study2(X, Y, id, 'Evento Negativo', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4, method=method)
+
+    X = np.load(data_path + 'mousepre2.npy')
+    Y = np.load(data_path + 'mousepost2.npy')
+    print(X.shape, Y.shape)
+    id = np.load(data_path + 'mouseids2.npy')
+    study2(X, Y, id, 'Evento Intermedio', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4, method=method)
