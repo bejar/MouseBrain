@@ -36,7 +36,7 @@ __author__ = 'bejar'
 
 # Configuration stuff
 hostname = socket.gethostname()
-port = 8900
+port = 8901
 
 app = Flask(__name__)
 
@@ -70,7 +70,7 @@ def experiment(exp):
     Experimento
     """
 
-    payload = exp  # request.form['experiment']
+    payload = exp
     client = MongoClient('mongodb://localhost:27017/')
     col = client.MouseBrain.Spikes
     vals = col.find({'exp': payload},
@@ -108,7 +108,7 @@ def graphic(exp, event):
     vals = col.find_one({'exp': exp, 'event': event},
                         {'spike': 1, 'ospike': 1, 'mark': 1, 'premark': 1, 'event_time': 1, 'pre': 1, 'post': 1,
                          'vmax': 1, 'vmin': 1, 'sampling': 1, 'sigma': 1, 'latency': 1,
-                         'discard': 1, 'annotation': 1})
+                         'discard': 1, 'annotation': 1, 'stmtime':1, 'stmspikes':1})
 
     data = cPickle.loads(vals['spike'])
     odata = cPickle.loads(vals['ospike'])
@@ -116,6 +116,8 @@ def graphic(exp, event):
     post = cPickle.loads(vals['post'])
     postmark = cPickle.loads(vals['mark'])
     premark = cPickle.loads(vals['premark'])
+    stmspikes = cPickle.loads(vals['stmspikes'])
+    stmtime = vals['stmtime']
     nrows = 6
 
     img = StringIO.StringIO()
@@ -161,6 +163,14 @@ def graphic(exp, event):
         axes.plot([premark[1], premark[1]], [maxvg, minvg], 'k')
 
     axes.plot([- (pre.shape[0] * sampling), data.shape[0] * sampling - (pre.shape[0] * sampling)], [vals['sigma'], vals['sigma']], 'y')
+
+    if stmspikes.shape[0] != 0:
+        stmspikes -= stmtime
+        stmspikes *= 1000
+        for i in range(stmspikes.shape[0]):
+            axes.plot([stmspikes[i], stmspikes[i]], [maxvg/2, minvg/2], 'm')
+
+
     # plt.legend()
 
     maxv = np.max(odata)
@@ -174,6 +184,9 @@ def graphic(exp, event):
     axes2.plot(t, odata, 'r')
     axes2.plot([0, 0], [minv, maxv], 'b')
     axes2.plot([ltn, ltn], [maxv, minv], 'c')
+    if stmspikes.shape[0] != 0:
+        for i in range(stmspikes.shape[0]):
+            axes2.plot([stmspikes[i], stmspikes[i]], [((maxv+minv)/2)+2,((maxv+minv)/2)-2], 'm')
 
     axes3 = fig.add_subplot(nrows, 2, 5)
     axes3.axis([0, (pre.shape[0] * sampling), minvg, maxvg])
@@ -198,7 +211,6 @@ def graphic(exp, event):
 
     t = np.arange(0.0, post.shape[0]) * sampling
     axes4.plot(t, post)
-
     # X ms windows integral
     # wlenpre = 40
     smax = 0
@@ -210,6 +222,10 @@ def graphic(exp, event):
             pos = j
     axes4.plot([pos * sampling, pos * sampling], [maxvg, minvg], 'r')
     axes4.plot([(pos + wlenpre) * sampling, (pos + wlenpre) * sampling], [maxvg, minvg], 'r')
+
+    if stmspikes.shape[0] != 0:
+        for i in range(stmspikes.shape[0]):
+            axes4.plot([stmspikes[i], stmspikes[i]], [maxvg/2, minvg/2], 'm')
 
     from scipy.signal import hilbert
 
@@ -233,6 +249,10 @@ def graphic(exp, event):
 
     t = np.arange(0.0, post.shape[0]) * sampling
     axes6.plot(t, envpost)
+
+    if stmspikes.shape[0] != 0:
+        for i in range(stmspikes.shape[0]):
+            axes6.plot([stmspikes[i], stmspikes[i]], [maxvg/2, minvg/2], 'm')
 
     axes7 = fig.add_subplot(nrows, 2, 9)
     ip_pre = np.unwrap(np.angle(a_pre))

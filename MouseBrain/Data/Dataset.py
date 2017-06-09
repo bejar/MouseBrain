@@ -45,11 +45,15 @@ class Dataset:
         self.times = None
         self.events = None
         self.sampling = None
-        self.eventsarray = None
+        self.events_array = None
         self.orig_eventsarray = None
         self.threshold = None
         self.wbefore = None
         self.wafter = None
+        self.orig_spikes = None
+        self.events_spikes = None
+        self.ok = True
+
 
     def read(self, normalize=True):
         """
@@ -62,14 +66,48 @@ class Dataset:
         self.orig_signal = seg.analogsignals[1].rescale('mV').magnitude
         self.times = seg.analogsignals[1].times.rescale('s').magnitude
         if len(seg.spiketrains) == 1:
-            ind = 0
+            self.ok = False
         else:
-            ind = 1
-        self.events = seg.spiketrains[ind].times.rescale('s').magnitude
-        self.sampling = float(seg.analogsignals[1].sampling_rate.rescale('Hz').magnitude)
-        if normalize:
-            self.signal -= np.mean(self.signal)
-            self.signal /= np.std(self.signal)
+            self.events = seg.spiketrains[1].times.rescale('s').magnitude
+            self.sampling = float(seg.analogsignals[1].sampling_rate.rescale('Hz').magnitude)
+            if normalize:
+                self.signal -= np.mean(self.signal)
+                self.signal /= np.std(self.signal)
+            self.orig_spikes = list(seg.spiketrains[0].rescale('s').magnitude)
+
+
+
+    def extract_stimuli_spikes(self, thresh=0.5):
+        """
+        Extracts the spikes generated in the stimulus site
+        :param thresh:
+        :return:
+        """
+        signal2 = list(self.events.copy())
+        signal2.append(1000)
+        i2 = 0
+        cnt = 0
+        lspikes =[]
+        lsptrain = []
+        signal = list(self.orig_spikes)
+        for i in range(len(signal)):
+            if (i2+1 < len(signal2)) and (signal2[i2] <= signal[i] <= signal2[i2+1]):
+                lsptrain.append(signal[i])
+                cnt += 1
+            else:
+                if (i2+1 < len(signal2)) and signal[i] > signal2[i2+1]:
+                    lspikes.append((signal2[i2], lsptrain))
+                    lsptrain = []
+                    cnt = 0
+                    i2 += 1
+
+
+        lspikes.append((signal2[i2], lsptrain))
+        ltrspikes = []
+        for v in lspikes:
+            ltrspikes.append([v[0], np.array([s for s in v[1] if s < (v[0]+0.5)])])
+
+        self.events_spikes = ltrspikes
 
     def describe(self):
         """
@@ -118,24 +156,24 @@ class Dataset:
         self.wbefore = int(before * self.sampling)
         self.wafter = int(after * self.sampling)
         cursor = 0
-        self.eventsarray = np.zeros((len(self.events), self.wbefore + self.wafter))
+        self.events_array = np.zeros((len(self.events), self.wbefore + self.wafter))
         self.orig_eventsarray = np.zeros((len(self.events), self.wbefore + self.wafter))
         fail = []
         for i, ev in enumerate(self.events):
             cursor = lookup(cursor, ev)
             if ((cursor + self.wafter) < self.signal.shape[0]) and ((cursor - self.wbefore) > 0):
-                self.eventsarray[i] = np.array(self.signal[cursor - self.wbefore:cursor + self.wafter])
+                self.events_array[i] = np.array(self.signal[cursor - self.wbefore:cursor + self.wafter])
                 self.orig_eventsarray[i] = np.array(self.orig_signal[cursor - self.wbefore:cursor + self.wafter])
             else:
                 fail.append(i)
 
         if len(fail) > 0:
-            sel = range(self.eventsarray.shape[0])
+            sel = range(self.events_array.shape[0])
             for f in fail:
                 sel.remove(f)
             self.times = self.times[sel]
             self.events = self.events[sel]
-            self.eventsarray = self.eventsarray[sel, :]
+            self.events_array = self.events_array[sel, :]
             self.orig_eventsarray = self.orig_eventsarray[sel, :]
 
     def mark_spikes(self, threshold, offset):
@@ -151,13 +189,13 @@ class Dataset:
         self.post_marks = np.zeros((len(self.events), 2), dtype=int)
         ahead = int(self.sampling * offset)
         for i in range(len(self.events)):
-            for j in range(self.wbefore + ahead, self.eventsarray.shape[1]):
-                if self.eventsarray[i, j] > threshold and self.post_marks[i, 0] == 0:
+            for j in range(self.wbefore + ahead, self.events_array.shape[1]):
+                if self.events_array[i, j] > threshold and self.post_marks[i, 0] == 0:
                     self.post_marks[i, 0] = j
-                if self.eventsarray[i, j] < threshold and self.post_marks[i, 0] != 0 and self.post_marks[i, 1] == 0:
+                if self.events_array[i, j] < threshold and self.post_marks[i, 0] != 0 and self.post_marks[i, 1] == 0:
                     self.post_marks[i, 1] = j
             if self.post_marks[i, 1] == 0 and self.post_marks[i, 0] != 0:
-                self.post_marks[i, 1] = self.eventsarray.shape[1] - 5
+                self.post_marks[i, 1] = self.events_array.shape[1] - 5
 
     def mark_pre_events(self):
         """
@@ -173,9 +211,9 @@ class Dataset:
 
             for i in range(len(self.events)):
                 for j in range(self.wbefore):
-                    if self.eventsarray[i, j] > threshold and self.pre_marks[i, 0] == 0:
+                    if self.events_array[i, j] > threshold and self.pre_marks[i, 0] == 0:
                         self.pre_marks[i, 0] = j
-                    if self.eventsarray[i, j] < threshold and self.pre_marks[i, 0] != 0 and self.pre_marks[i, 1] == 0:
+                    if self.events_array[i, j] < threshold and self.pre_marks[i, 0] != 0 and self.pre_marks[i, 1] == 0:
                         self.pre_marks[i, 1] = j
                 if self.pre_marks[i, 1] == 0 and self.post_marks[i, 0] != 0:
                     self.pre_marks[i, 1] = self.wbefore
@@ -234,14 +272,14 @@ class Dataset:
         fig.set_figwidth(30)
         fig.set_figheight(40)
 
-        minaxis = np.min(self.eventsarray)
-        maxaxis = np.max(self.eventsarray)
-        num = self.eventsarray.shape[1]
+        minaxis = np.min(self.events_array)
+        maxaxis = np.max(self.events_array)
+        num = self.events_array.shape[1]
         sp1 = fig.add_subplot(111)
         sp1.axis([0, num, minaxis, maxaxis])
         t = np.arange(0.0, num, 1)
         for i in range(len(self.events)):
-            sp1.plot(t, self.eventsarray[i], 'b')
+            sp1.plot(t, self.events_array[i], 'b')
         sp1.plot([self.wbefore, self.wbefore], [minaxis, maxaxis], 'r')
         plt.show()
 
@@ -256,13 +294,13 @@ class Dataset:
         fig.set_figwidth(30)
         fig.set_figheight(40)
 
-        minaxis = np.min(self.eventsarray)
-        maxaxis = np.max(self.eventsarray)
-        num = self.eventsarray.shape[1]
+        minaxis = np.min(self.events_array)
+        maxaxis = np.max(self.events_array)
+        num = self.events_array.shape[1]
         sp1 = fig.add_subplot(111)
         sp1.axis([0, num, minaxis, maxaxis])
         t = np.arange(0.0, num, 1)
-        sp1.plot(t, self.eventsarray[ev], 'b')
+        sp1.plot(t, self.events_array[ev], 'b')
         sp1.plot([self.wbefore, self.wbefore], [minaxis, maxaxis], 'r')
         if self.post_marks is not None and self.post_marks[ev, 0] != 0:
             tm = np.arange(self.post_marks[ev, 0] - 5, self.post_marks[ev, 1] + 5, 1)
@@ -283,9 +321,9 @@ class Dataset:
         else:
             vdiscard = 0
 
-        lid = [int(self.file[-3:]) * 100 + i for i in range(self.eventsarray.shape[0])]
-        prem = self.eventsarray[:, :self.wbefore - vdiscard]
-        posm = self.eventsarray[:, self.wbefore + vdiscard:]
+        lid = [int(self.file[-3:]) * 100 + i for i in range(self.events_array.shape[0])]
+        prem = self.events_array[:, :self.wbefore - vdiscard]
+        posm = self.events_array[:, self.wbefore + vdiscard:]
         join = np.column_stack((prem, posm))
 
         if normalize:
@@ -316,10 +354,17 @@ if __name__ == '__main__':
     # print (mat.shape)
 
     data.mark_spikes(2, 0.05)
+    data.mark_pre_events()
+    data.extract_stimuli_spikes()
 
-    print data.assign_labels()
-    # print data.marks
-
-    for i, e in zip(range(len(data.events)), data.assign_labels()):
-        if e == 0:
-            data.show_event(i)
+    # print(len(data.events_spikes))
+    # print(len(data.times))
+    # print(data.orig_spikes)
+    # print(data.times)
+    #
+    # print data.assign_labels()
+    # # print data.marks
+    #
+    # for i, e in zip(range(len(data.events)), data.assign_labels()):
+    #     if e == 0:
+    #         data.show_event(i)

@@ -46,10 +46,11 @@ if __name__ == '__main__':
     discard = 0.01
     for file in files:
         if file not in ['Exp006']:
+            print(file)
             data = Dataset(file)
             data.read(normalize=False)
             # data.describe()
-            if data.sampling > 100.0:
+            if data.ok and data.sampling > 100.0:
                 nev += data.events.shape[0]
                 data.downsample(256.4102564102564)
                 # data.show_signal()
@@ -73,14 +74,16 @@ if __name__ == '__main__':
                 data.extract_events(1.5, 0.5)
                 data.mark_spikes(sigma, latencia + discard)
                 data.mark_pre_events()
+                data.extract_stimuli_spikes()
 
-                spikes = data.eventsarray
+                spikes = data.events_array
                 ospikes = data.orig_eventsarray
                 spostmarks = data.post_marks
                 spremarks = data.pre_marks
                 labels = data.assign_labels()
                 vmax = max(np.max(postdata), np.max(predata))
                 vmin = min(np.min(postdata), np.min(predata))
+                stmspikes = data.events_spikes
 
                 for i in range(spikes.shape[0]):
                     # if labels[i] == 0:
@@ -93,6 +96,8 @@ if __name__ == '__main__':
                                  'mark':  Binary(cPickle.dumps(spostmarks[i], protocol=2)),
                                  'premark':  Binary(cPickle.dumps(spremarks[i], protocol=2)),
                                  'label': int(labels[i]),
+                                 'stmtime': float(stmspikes[i][0]),
+                                 'stmspikes': Binary(cPickle.dumps(stmspikes[i][1], protocol=2)),
                                  'sampling': data.sampling,
                                  'wbefore': data.wbefore,
                                  'wafter': data.wafter,
@@ -102,5 +107,4 @@ if __name__ == '__main__':
                                  'sigma': sigma,
                                  'latency': latencia,
                                  'discard': discard}
-
                         col.insert(event)
