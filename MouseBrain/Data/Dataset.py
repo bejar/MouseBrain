@@ -162,8 +162,8 @@ class Dataset:
         for i, ev in enumerate(self.events):
             cursor = lookup(cursor, ev)
             if ((cursor + self.wafter) < self.signal.shape[0]) and ((cursor - self.wbefore) > 0):
-                self.events_array[i] = np.array(self.signal[cursor - self.wbefore:cursor + self.wafter])
-                self.orig_eventsarray[i] = np.array(self.orig_signal[cursor - self.wbefore:cursor + self.wafter])
+                self.events_array[i] = np.array(self.signal[cursor - self.wbefore:cursor + self.wafter, 0])
+                self.orig_eventsarray[i] = np.array(self.orig_signal[cursor - self.wbefore:cursor + self.wafter, 0])
             else:
                 fail.append(i)
 

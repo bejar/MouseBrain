@@ -42,7 +42,7 @@ if __name__ == '__main__':
             # if file in ['Exp019', 'Exp020', 'Exp021', 'Exp022', 'Exp013', 'Exp014', 'Exp015']:
             data = Dataset(file)
             data.read(normalize=False)
-            if data.sampling > 100.0:
+            if data.ok and data.sampling > 100.0:
                 data.downsample(256.4102564102564)
 
                 data.extract_events(1.5, 0.5)

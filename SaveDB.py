@@ -88,6 +88,7 @@ if __name__ == '__main__':
                 for i in range(spikes.shape[0]):
                     # if labels[i] == 0:
                         event = {'exp': file,
+                                 'code': int(file[-3:]) * 100 + i,
                                  'event': i,
                                  'pre': Binary(cPickle.dumps(predata[i], protocol=2)),
                                  'post':  Binary(cPickle.dumps(postdata[i], protocol=2)),
