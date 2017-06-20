@@ -17,7 +17,6 @@ Analysis
 
 """
 
-
 from sklearn.manifold import MDS, Isomap, TSNE, SpectralEmbedding
 from MouseBrain.Data import Dataset
 from MouseBrain.Config import data_path
@@ -33,6 +32,7 @@ from pymongo import MongoClient
 import cPickle
 
 __author__ = 'bejar'
+
 
 # def integral(pre, post):
 #     """
@@ -55,6 +55,33 @@ __author__ = 'bejar'
 #     fig = plt.figure(figsize=(10, 10))
 #     plt.scatter(lintpre, lintpost)
 #     plt.show()
+
+def accum_sep(vdata):
+    """
+
+    :param vdata:
+    :return:
+    """
+    smax = argrelextrema(vdata, np.greater_equal, order=10)[0]
+    dsel = vdata[smax]
+    cnt = len(dsel)
+    if cnt > 1:
+        p = np.argmax(dsel)
+        dsel[p] = -1
+        end = False
+        cnt -= 1
+        while not end:
+            p1 = np.argmax(dsel)
+            cnt -= 1
+            if np.abs(smax[p1]-smax[p]) < 50:
+                dsel[p1] = -1
+            else:
+                end = True
+            if cnt == 0:
+                end = True
+        return np.abs(smax[p1]-smax[p])
+    else:
+        return 0
 
 def plot_positions(id, eleft, eright, axes, data, mxstd, tol=2, eclass=True):
     """
@@ -92,6 +119,7 @@ def plot_positions(id, eleft, eright, axes, data, mxstd, tol=2, eclass=True):
                 ax2.plot([prep, posp], [prei, posi], 'r:')
                 ax4.plot(prei, posi, 'b', marker='o')
 
+
 def study2(X, Y, id, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4, method='integral'):
     """
     Study of mouse events
@@ -118,8 +146,8 @@ def study2(X, Y, id, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4,
             lpremxstd.append(np.std(mxvals))
     elif method == 'max':
         for i in range(X.shape[0]):
-            smax = np.max(X[i,:])
-            pos = np.argmax(X[i,:])
+            smax = np.max(X[i, :])
+            pos = np.argmax(X[i, :])
             lpreint.append(smax)
             lprepos.append(pos)
             lpremxstd.append(0)
@@ -137,8 +165,8 @@ def study2(X, Y, id, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4,
             lpospos.append(pos + (wlenpos / 2))
     elif method == 'max':
         for i in range(Y.shape[0]):
-            smax = np.max(Y[i,:])
-            pos = np.argmax(Y[i,:])
+            smax = np.max(Y[i, :])
+            pos = np.argmax(Y[i, :])
             lposint.append(smax)
             lpospos.append(pos)
 
@@ -155,17 +183,17 @@ def study2(X, Y, id, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4,
     maxrangeY = np.max(lposint)
 
     for p, lim in enumerate([-1500, -1000, -500]):
-        ax1 = fig.add_subplot(3, 4, (p*4)+1)
+        ax1 = fig.add_subplot(3, 4, (p * 4) + 1)
         ax1.axis([-1500, 500, 0, maxrange])
-        ax2 = fig.add_subplot(3, 4, (p*4)+2)
+        ax2 = fig.add_subplot(3, 4, (p * 4) + 2)
         ax2.axis([-1500, 500, 0, maxrange])
-        ax3 = fig.add_subplot(3, 4, (p*4)+3)
+        ax3 = fig.add_subplot(3, 4, (p * 4) + 3)
         ax3.axis([0, maxrangeX, 0, maxrangeY])
-        ax4 = fig.add_subplot(3, 4, (p*4)+4)
+        ax4 = fig.add_subplot(3, 4, (p * 4) + 4)
         ax4.axis([0, maxrangeX, 0, maxrangeY])
 
-
-        plot_positions(id, lim, lim+500, [ax1, ax2, ax3, ax4], data=(lprepos, lpreint, lpospos, lposint), mxstd=lpremxstd, tol=tol, eclass=eclass)
+        plot_positions(id, lim, lim + 500, [ax1, ax2, ax3, ax4], data=(lprepos, lpreint, lpospos, lposint),
+                       mxstd=lpremxstd, tol=tol, eclass=eclass)
 
     plt.show()
 
@@ -205,8 +233,8 @@ def study3(X, Y, ids, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4
             lpremxstd.append(np.std(mxvals))
     elif method == 'max':
         for i in range(X.shape[0]):
-            smax = np.max(X[i,:])
-            pos = np.argmax(X[i,:])
+            smax = np.max(X[i, :])
+            pos = np.argmax(X[i, :])
             lpreint.append(smax)
             lprepos.append(pos)
             lpremxstd.append(0)
@@ -222,8 +250,8 @@ def study3(X, Y, ids, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4
             lpospos.append(pos + (wlenpos / 2))
     elif method == 'max':
         for i in range(Y.shape[0]):
-            smax = np.max(Y[i,:])
-            pos = np.argmax(Y[i,:])
+            smax = np.max(Y[i, :])
+            pos = np.argmax(Y[i, :])
             lposint.append(smax)
             lpospos.append(pos)
 
@@ -232,17 +260,25 @@ def study3(X, Y, ids, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4
     nsp_plus = []
     nsp_minus = []
     for id, prei, posti in zip(ids, lpreint, lposint):
-        vals = col.find_one({'code':id}, {'stmspikes':1})
+        vals = col.find_one({'code': id}, {'stmspikes': 1})
         stmspikes = cPickle.loads(vals['stmspikes'])
-        if stmspikes.shape[0]>2:
+        vspikes = np.array(stmspikes)
+
+        if stmspikes.shape[0] > 2:
             ldist = []
-            for i in range(1,stmspikes.shape[0]):
-                ldist.append(stmspikes[i]-stmspikes[i-1])
+            for i in range(1, stmspikes.shape[0]):
+                ldist.append(stmspikes[i] - stmspikes[i - 1])
             mdist = np.max(np.array(ldist))
+
+            spkcnt = np.zeros(500)
+            for i in range(500):
+                spkcnt[i] = np.sum(np.logical_and(vspikes >= i, vspikes < (i + 50)))
+            spksep = accum_sep(spkcnt)
+
             if prei > posti:
-                nsp_plus.append([mdist, stmspikes.shape[0], stmspikes[-1] - stmspikes[0]])
+                nsp_plus.append([mdist, stmspikes.shape[0], stmspikes[-1] - stmspikes[0], spksep])
             else:
-                nsp_minus.append([mdist, stmspikes.shape[0], stmspikes[-1] - stmspikes[0]])
+                nsp_minus.append([mdist, stmspikes.shape[0], stmspikes[-1] - stmspikes[0], spksep])
 
     nsp_minus = np.array(nsp_minus)
     nsp_plus = np.array(nsp_plus)
@@ -250,35 +286,44 @@ def study3(X, Y, ids, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4
     print nsp_plus.shape
     fig = plt.figure(figsize=(20, 20))
     plt.suptitle(title)
-    if nsp_plus.shape[0] >0:
-        ax = fig.add_subplot(322)
-        ax.axis([0,0.5,0,10])
-        sn.distplot(nsp_plus[:,0], rug=True, hist=False)
-    if nsp_minus.shape[0] >0:
-        ax = fig.add_subplot(321)
-        ax.axis([0,0.5,0,10])
-        sn.distplot(nsp_minus[:,0], rug=True, hist=False)
+    if nsp_plus.shape[0] > 0:
+        ax = fig.add_subplot(422)
+        ax.axis([0, 0.5, 0, 10])
+        sn.distplot(nsp_plus[:, 0], rug=True, hist=False)
+    if nsp_minus.shape[0] > 0:
+        ax = fig.add_subplot(421)
+        ax.axis([0, 0.5, 0, 10])
+        sn.distplot(nsp_minus[:, 0], rug=True, hist=False)
 
-    if nsp_plus.shape[0] >0:
-        ax = fig.add_subplot(324)
-        ax.axis([0,60,0,0.05])
-        sn.distplot(nsp_plus[:,1], rug=True, hist=False)
-    if nsp_minus.shape[0] >0:
-        ax = fig.add_subplot(323)
-        ax.axis([0,60,0,0.05])
-        sn.distplot(nsp_minus[:,1], rug=True, hist=False)
+    if nsp_plus.shape[0] > 0:
+        ax = fig.add_subplot(424)
+        ax.axis([0, 60, 0, 0.05])
+        sn.distplot(nsp_plus[:, 1], rug=True, hist=False)
+    if nsp_minus.shape[0] > 0:
+        ax = fig.add_subplot(423)
+        ax.axis([0, 60, 0, 0.05])
+        sn.distplot(nsp_minus[:, 1], rug=True, hist=False)
 
-    if nsp_plus.shape[0] >0:
-        ax = fig.add_subplot(326)
-        ax.axis([0,0.5,0,10])
-        sn.distplot(nsp_plus[:,2], rug=True, hist=False)
-    if nsp_minus.shape[0] >0:
-        ax = fig.add_subplot(325)
-        ax.axis([0,0.5,0,10])
-        sn.distplot(nsp_minus[:,2], rug=True, hist=False)
+    if nsp_plus.shape[0] > 0:
+        ax = fig.add_subplot(426)
+        ax.axis([0, 0.5, 0, 10])
+        sn.distplot(nsp_plus[:, 2], rug=True, hist=False)
+    if nsp_minus.shape[0] > 0:
+        ax = fig.add_subplot(425)
+        ax.axis([0, 0.5, 0, 10])
+        sn.distplot(nsp_minus[:, 2], rug=True, hist=False)
 
+    if nsp_plus.shape[0] > 0:
+        ax = fig.add_subplot(428)
+        ax.axis([0, 500, 0, 0.1])
+        sn.distplot(nsp_plus[:, 3], rug=True, hist=False)
+    if nsp_minus.shape[0] > 0:
+        ax = fig.add_subplot(427)
+        ax.axis([0, 500, 0, 0.1])
+        sn.distplot(nsp_minus[:, 3], rug=True, hist=False)
 
     plt.show()
+
 
 def study(X, Y, ids, title, wlenpre, wlenpos):
     """
@@ -371,7 +416,6 @@ def study(X, Y, ids, title, wlenpre, wlenpos):
     # plt.show()
 
 
-
 def make_study2():
     """
     Analyzes the height of pre and post responses according to the classes of events
@@ -399,6 +443,7 @@ def make_study2():
     id = np.load(data_path + 'mouseids2.npy')
     study2(X, Y, id, 'Evento Intermedio', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
            method=method)
+
 
 def make_study3():
     """
@@ -429,8 +474,6 @@ def make_study3():
     id = np.load(data_path + 'mouseids1.npy')
     study3(X, Y, id, 'Evento Positivo', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
            method=method)
-
-
 
 
 if __name__ == '__main__':

@@ -19,6 +19,7 @@
 <table>
     <tr>
         <th>Experiment</th>
+        <th>Sampling</th>
         <th>Num Events</th>
         <th>Events/Class 0</th>
         <th>Events/Class 1</th>
@@ -32,6 +33,7 @@
         {% else %}
         <td>{{net}}</td>
         {% endif %}
+        <td>{{data[net]['sampling']}}</td>
         <td>{{data[net]['ev_cnt']}}</td>
         <td>{{data[net]['labels'][0]}}</td>
         <td>{{data[net]['labels'][1]}}</td>

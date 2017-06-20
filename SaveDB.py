@@ -50,9 +50,11 @@ if __name__ == '__main__':
             data = Dataset(file)
             data.read(normalize=False)
             # data.describe()
-            if data.ok and data.sampling > 100.0:
+            if data.ok and data.sampling > 150.0:
+                dsamp = data.sampling
                 nev += data.events.shape[0]
-                data.downsample(256.4102564102564)
+                if  data.sampling>257:
+                    data.downsample(256.4102564102564)
                 # data.show_signal()
 
                 data.extract_events(1.5, 0.5)
@@ -70,7 +72,8 @@ if __name__ == '__main__':
 
                 data = Dataset(file)
                 data.read(normalize=True)
-                data.downsample(256.4102564102564)
+                if  data.sampling>257:
+                    data.downsample(256.4102564102564)
                 data.extract_events(1.5, 0.5)
                 data.mark_spikes(sigma, latencia + discard)
                 data.mark_pre_events()
@@ -100,6 +103,7 @@ if __name__ == '__main__':
                                  'stmtime': float(stmspikes[i][0]),
                                  'stmspikes': Binary(cPickle.dumps(stmspikes[i][1], protocol=2)),
                                  'sampling': data.sampling,
+                                 'osampling': dsamp,
                                  'wbefore': data.wbefore,
                                  'wafter': data.wafter,
                                  'event_time': float(data.events[i]),

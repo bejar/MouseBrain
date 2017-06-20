@@ -21,6 +21,7 @@
     <tr>
         <th>Event</th>
         <th>Label</th>
+        <th>maxvals</th>
         <th>Annotation</th>
         <th>View</th>
     </tr>
@@ -31,7 +32,23 @@
         {% else %}
         <td>{{net}}</td>
         {% endif %}
-        <td>{{data[net]['label']}}</td>
+
+        {%if data[net]['label'] == 0%}
+        <td><span style="color:red"> {{data[net]['label']}}</span></td>
+        {% else %}
+            {%if data[net]['label'] == 1%}
+            <td><span style="color:green"> {{data[net]['label']}}</span></td>
+            {% else %}
+            <td><span style="color:blue"> {{data[net]['label']}}</span></td>
+            {% endif %}
+        {% endif %}
+        {%if data[net]['vdiff'] %}
+
+        <td><span style="color:red"> {{data[net]['mval']}}</span></td>
+         {% else %}
+        <td><span style="color:green"> {{data[net]['mval']}}</span></td>
+        {% endif %}
+
         <td>{{data[net]['annotation']}}</td>
         <td>
             <form action="/View/{{exp}}/{{net}}" method="post">

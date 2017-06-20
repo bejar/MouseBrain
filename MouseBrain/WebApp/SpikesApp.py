@@ -32,6 +32,8 @@ import matplotlib.ticker as ticker
 import base64
 import numpy as np
 
+from scipy.signal import argrelextrema, argrelmax
+
 __author__ = 'bejar'
 
 # Configuration stuff
@@ -49,7 +51,7 @@ def info():
     client = MongoClient('mongodb://localhost:27017/')
     col = client.MouseBrain.Spikes
     vals = col.find({},
-                    {'_id': 1, 'exp': 1, 'event': 1, 'label': 1, 'check': 1, 'annotation': 1})
+                    {'_id': 1, 'exp': 1, 'event': 1, 'label': 1, 'check': 1, 'annotation': 1, 'osampling': 1})
     res = {}
     for v in vals:
         if v['exp'] not in res:
@@ -60,6 +62,7 @@ def info():
             res[v['exp']]['labels'][v['label']] += 1
         if 'annotation' in v and v['annotation'] != '':
             res[v['exp']]['check'] = True
+        res[v['exp']]['sampling'] = v['osampling']
 
     return render_template('ExperimentsList.html', data=res)
 
@@ -74,7 +77,7 @@ def experiment(exp):
     client = MongoClient('mongodb://localhost:27017/')
     col = client.MouseBrain.Spikes
     vals = col.find({'exp': payload},
-                    {'_id': 1, 'exp': 1, 'event': 1, 'label': 1, 'check': 1, 'annotation': 1})
+                    {'_id': 1, 'exp': 1, 'event': 1, 'label': 1, 'check': 1, 'annotation': 1, 'pre': 1, 'post': 1})
 
     res = {}
     for v in vals:
@@ -85,7 +88,10 @@ def experiment(exp):
         annotation = ''
         if 'annotation' in v:
             annotation = v['annotation']
-        res['%03d' % v['event']] = {'event': v['event'], 'label': v['label'], 'check': mark, 'annotation': annotation}
+        pre = np.max(cPickle.loads(v['pre']))
+        post = np.max(cPickle.loads(v['post']))
+        res['%03d' % v['event']] = {'event': v['event'], 'label': v['label'], 'check': mark, 'annotation': annotation,
+                                    'mval': '%3.2f/%3.2f'%(pre,post), 'vdiff':pre>post}
 
     return render_template('EventsList.html', data=res, exp=payload, port=port)
 
@@ -169,13 +175,11 @@ def graphic(exp, event):
         stmspikes *= 1000
         for i in range(stmspikes.shape[0]):
             axes.plot([stmspikes[i], stmspikes[i]], [maxvg/2, minvg/2], 'm')
-
-
     # plt.legend()
 
     maxv = np.max(odata)
     minv = np.min(odata)
-    axes2 = fig.add_subplot(nrows, 1, 2)
+    axes2 = fig.add_subplot(nrows, 2, 3)
     axes2.axis([- (pre.shape[0] * sampling), data.shape[0] * sampling - (pre.shape[0] * sampling), minv, maxv])
     axes2.set_xlabel('time')
     axes2.set_ylabel('mV')
@@ -187,6 +191,19 @@ def graphic(exp, event):
     if stmspikes.shape[0] != 0:
         for i in range(stmspikes.shape[0]):
             axes2.plot([stmspikes[i], stmspikes[i]], [((maxv+minv)/2)+2,((maxv+minv)/2)-2], 'm')
+
+
+    vspikes = np.array(stmspikes)
+    spkcnt = np.zeros(50)
+    for i in range(50):
+        spkcnt[i] = np.sum(np.logical_and(vspikes>=(i*10),vspikes<(i*10)+50))
+    smax = argrelextrema(spkcnt, np.greater_equal, order=10)
+
+    axes22 = fig.add_subplot(nrows, 2, 4)
+    axes22.axis([0, 500, 0, np.max(spkcnt)+2])
+    axes22.plot(range(0,500, 10), spkcnt, 'm')
+    for ex in smax:
+        axes22.plot(ex*10, spkcnt[ex], 'k+')
 
     axes3 = fig.add_subplot(nrows, 2, 5)
     axes3.axis([0, (pre.shape[0] * sampling), minvg, maxvg])
