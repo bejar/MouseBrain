@@ -30,8 +30,9 @@ class Dataset:
     """
     Class for Config Experiments
     """
+    EEG = 8
 
-    def __init__(self, filename):
+    def __init__(self, filename, path=None, type='one'):
         """
         Imports file data
         :param filename:
@@ -53,6 +54,11 @@ class Dataset:
         self.orig_spikes = None
         self.events_spikes = None
         self.ok = True
+        self.type = type
+        if path is not None:
+            self.path = path
+        else:
+            self.path = data_path
 
 
     def read(self, normalize=True):
@@ -60,22 +66,33 @@ class Dataset:
         Read the data from the file
         :return:
         """
-        r = Spike2IO(filename=data_path + self.file + '.smr')
+
+        r = Spike2IO(filename=self.path + self.file + '.smr')
         seg = r.read_segment(lazy=False, cascade=True, )
-        self.signal = seg.analogsignals[1].rescale('mV').magnitude
-        self.orig_signal = seg.analogsignals[1].rescale('mV').magnitude
-        self.times = seg.analogsignals[1].times.rescale('s').magnitude
-        if len(seg.spiketrains) == 1:
-            self.ok = False
-        else:
-            self.events = seg.spiketrains[1].times.rescale('s').magnitude
-            self.sampling = float(seg.analogsignals[1].sampling_rate.rescale('Hz').magnitude)
+        if self.type == 'one':
+            self.signal = seg.analogsignals[1].rescale('mV').magnitude
+            self.orig_signal = seg.analogsignals[1].rescale('mV').magnitude
+            self.times = seg.analogsignals[1].times.rescale('s').magnitude
+            if len(seg.spiketrains) == 1:
+                self.ok = False
+            else:
+                self.events = seg.spiketrains[1].times.rescale('s').magnitude
+                self.sampling = float(seg.analogsignals[1].sampling_rate.rescale('Hz').magnitude)
+                if normalize:
+                    self.signal -= np.mean(self.signal)
+                    self.signal /= np.std(self.signal)
+                self.orig_spikes = list(seg.spiketrains[0].rescale('s').magnitude)
+        elif self.type == 'two':
+            self.signal = seg.analogsignals[self.EEG].rescale('mV').magnitude
             if normalize:
                 self.signal -= np.mean(self.signal)
                 self.signal /= np.std(self.signal)
-            self.orig_spikes = list(seg.spiketrains[0].rescale('s').magnitude)
-
-
+            self.orig_signal = seg.analogsignals[self.EEG].rescale('mV').magnitude
+            self.times = seg.analogsignals[self.EEG].times.rescale('s').magnitude
+            self.sampling = float(seg.analogsignals[self.EEG].sampling_rate.rescale('Hz').magnitude)
+            self.events = seg.events[1].times.rescale('s').magnitude
+            self.eventsExtra = seg.events[0].times.rescale('s').magnitude
+            self.orig_spikes = list(seg.spiketrains[1].rescale('s').magnitude)
 
     def extract_stimuli_spikes(self, thresh=0.5):
         """
@@ -321,7 +338,10 @@ class Dataset:
         else:
             vdiscard = 0
 
-        lid = [int(self.file[-3:]) * 100 + i for i in range(self.events_array.shape[0])]
+        if self.type == 'one':
+            lid = [int(self.file[-3:]) * 100 + i for i in range(self.events_array.shape[0])]
+        elif self.type == 'two':
+            lid = [int(self.file[0:2]) * 10000 + i for i in range(self.events_array.shape[0])]
         prem = self.events_array[:, :self.wbefore - vdiscard]
         posm = self.events_array[:, self.wbefore + vdiscard:]
         join = np.column_stack((prem, posm))

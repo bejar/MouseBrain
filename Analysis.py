@@ -476,9 +476,43 @@ def make_study3():
            method=method)
 
 
+def make_study4():
+    """
+    Analizes the statistics of event site spikes depending on the characteristics of the
+    pre and post responses
+
+    Study 2 with the new data
+
+    :return:
+    """
+    method = 'max'  # max integral
+    winlen = 10
+    X = np.load(data_path + 'mouseprenew2.npy')
+    Y = np.load(data_path + 'mousepostnew2.npy')
+    print(X.shape, Y.shape)
+    id = np.load(data_path + 'mouseidsnew2.npy')
+    study3(X, Y, id, 'Evento Intermedio', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
+           method=method)
+
+    X = np.load(data_path + 'mouseprenew0.npy')
+    Y = np.load(data_path + 'mousepostnew0.npy')
+    print(X.shape, Y.shape)
+    id = np.load(data_path + 'mouseidsnew0.npy')
+    study3(X, Y, id, 'Evento Negativo', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
+           method=method)
+
+    X = np.load(data_path + 'mouseprenew1.npy')
+    Y = np.load(data_path + 'mousepostnew1.npy')
+    print(X.shape, Y.shape)
+    id = np.load(data_path + 'mouseidsnew1.npy')
+    study3(X, Y, id, 'Evento Positivo', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
+           method=method)
+
+
+
 if __name__ == '__main__':
     # X = np.load(data_path + 'mousepre2.npy')
     # Y = np.load(data_path + 'mousepost2.npy')
     # id = np.load(data_path + 'mouseids2.npy')
 
-    make_study3()
+    make_study4()

@@ -30,10 +30,12 @@ __author__ = 'bejar'
 
 
 if __name__ == '__main__':
+    npath = '/home/bejar/storage/Data/Mouse3/03-04-2017/'
+    files = sorted([name.split('/')[-1].split('.')[0] for name in glob.glob(npath + '/*.smr')])
 
-    files = sorted([name.split('/')[-1].split('.')[0] for name in glob.glob(data_path + '/*.smr')])
+    # files = sorted([name.split('/')[-1].split('.')[0] for name in glob.glob(data_path + '/*.smr')])
     client = MongoClient('mongodb://localhost:27017/')
-    client.MouseBrain.Spikes.drop()
+    # client.MouseBrain.Spikes.drop()
     col = client.MouseBrain.Spikes
     nev = 0
     split = True
@@ -47,7 +49,7 @@ if __name__ == '__main__':
     for file in files:
         if file not in ['Exp006']:
             print(file)
-            data = Dataset(file)
+            data = Dataset(file, path=npath, type='two')
             data.read(normalize=False)
             # data.describe()
             if data.ok and data.sampling > 150.0:
@@ -70,7 +72,7 @@ if __name__ == '__main__':
                 predata = mat[0]
                 postdata = mat[1]
 
-                data = Dataset(file)
+                data = Dataset(file, path=npath, type='two')
                 data.read(normalize=True)
                 if  data.sampling>257:
                     data.downsample(256.4102564102564)
@@ -88,10 +90,14 @@ if __name__ == '__main__':
                 vmin = min(np.min(postdata), np.min(predata))
                 stmspikes = data.events_spikes
 
+                if data.type == 'one':
+                    code = int(file[-3:]) * 100
+                else:
+                    code = int(file[0:2]) * 10000
                 for i in range(spikes.shape[0]):
                     # if labels[i] == 0:
                         event = {'exp': file,
-                                 'code': int(file[-3:]) * 100 + i,
+                                 'code': code + i,
                                  'event': i,
                                  'pre': Binary(cPickle.dumps(predata[i], protocol=2)),
                                  'post':  Binary(cPickle.dumps(postdata[i], protocol=2)),
