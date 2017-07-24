@@ -25,11 +25,13 @@ import glob
 import numpy as np
 from collections import Counter
 import matplotlib.pyplot as plt
+from pylab import *
 from mpl_toolkits.mplot3d import Axes3D
 import seaborn as sn
 from scipy.signal import argrelextrema
 from pymongo import MongoClient
 import cPickle
+from scipy.stats import ks_2samp, anderson_ksamp
 
 __author__ = 'bejar'
 
@@ -73,17 +75,18 @@ def accum_sep(vdata):
         while not end:
             p1 = np.argmax(dsel)
             cnt -= 1
-            if np.abs(smax[p1]-smax[p]) < 50:
+            if np.abs(smax[p1] - smax[p]) < 50:
                 dsel[p1] = -1
             else:
                 end = True
             if cnt == 0:
                 end = True
-        return np.abs(smax[p1]-smax[p])
+        return np.abs(smax[p1] - smax[p])
     else:
         return 0
 
-def plot_positions(id, eleft, eright, axes, data, mxstd, tol=2, eclass=True):
+
+def plot_positions(id, eleft, eright, axes, data, mxstd, tol=2, eclass=True, new=False):
     """
     Plots the data for the pre and post events
     :param eleft: 
@@ -101,26 +104,36 @@ def plot_positions(id, eleft, eright, axes, data, mxstd, tol=2, eclass=True):
     ax1.plot([0, 0], [0, 180], 'k')
     ax2.plot([0, 0], [0, 180], 'k')
     lprepos, lpreint, lpospos, lposint = data
-    for ip, (prep, prei, posp, posi) in enumerate(zip(lprepos, lpreint, lpospos, lposint)):
+    for ip, (prep, prei, posp, posi, idi) in enumerate(zip(lprepos, lpreint, lpospos, lposint, id)):
+        mark = 's' if new and ((idi / 1000) < 100) else 'o'
         if eleft < prep < eright:
             if (eclass and prei > posi) or (not eclass and prei < posi):
                 ax1.plot([prep, posp], [prei, posi], 'g:')
 
-                cm = 'k' if mxstd[ip] > tol else 'b'
-                ax1.plot([prep], [prei], cm, marker='o')
-                ax1.plot([posp], [posi], 'b', marker='o')
+                clm = 'b' if mark == 'o' else 'c'
+                cm = 'k' if mxstd[ip] > tol else clm
+                ax1.plot([prep], [prei], cm, marker=mark)
+                ax1.plot([posp], [posi], clm, marker=mark)
                 print(id[ip], prei, posi)
-                ax3.plot(prei, posi, 'b', marker='o')
-
+                ax3.plot(posi, prei, clm, marker=mark)
+                if prei >= posi:
+                    ax3.set_xlabel('POST < PRE')
+                else:
+                    ax3.set_xlabel('POST > PRE')
             else:
-                cm = 'k' if mxstd[ip] > tol else 'y'
-                ax2.plot([prep], [prei], cm, marker='o')
-                ax2.plot([posp], [posi], 'y', marker='o')
+                clm = 'y' if mark == 'o' else 'g'
+                cm = 'k' if mxstd[ip] > tol else clm
+                ax2.plot([prep], [prei], cm, marker=mark)
+                ax2.plot([posp], [posi], clm, marker=mark)
                 ax2.plot([prep, posp], [prei, posi], 'r:')
-                ax4.plot(prei, posi, 'b', marker='o')
+                ax4.plot(posi, prei, clm, marker=mark)
+                if prei >= posi:
+                    ax4.set_xlabel('POST < PRE')
+                else:
+                    ax4.set_xlabel('POST > PRE')
 
 
-def study2(X, Y, id, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4, method='integral'):
+def study2(X, Y, id, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4, method='integral', new=False):
     """
     Study of mouse events
     
@@ -175,12 +188,17 @@ def study2(X, Y, id, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4,
     lprepos = (np.array(lprepos) * (1000 / freq)) - (1500 - (wtpre / 2))
     lpospos = np.array(lpospos) * (1000 / freq) + (off * 1000)
 
-    fig = plt.figure(figsize=(20, 20))
+    matplotlib.rcParams.update({'font.size': 12})
+    fig = plt.figure(figsize=(15, 15))
     plt.suptitle(title)
 
-    maxrange = np.max([np.max(lposint), np.max(lpreint)])
-    maxrangeX = np.max(lpreint)
-    maxrangeY = np.max(lposint)
+    # maxrange = np.max([np.max(lposint), np.max(lpreint)])
+    # maxrangeX = np.max(lpreint)
+    # maxrangeY = np.max(lposint)
+
+    maxrange = 15
+    maxrangeX = 15
+    maxrangeY = 15
 
     for p, lim in enumerate([-1500, -1000, -500]):
         ax1 = fig.add_subplot(3, 4, (p * 4) + 1)
@@ -193,8 +211,9 @@ def study2(X, Y, id, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4,
         ax4.axis([0, maxrangeX, 0, maxrangeY])
 
         plot_positions(id, lim, lim + 500, [ax1, ax2, ax3, ax4], data=(lprepos, lpreint, lpospos, lposint),
-                       mxstd=lpremxstd, tol=tol, eclass=eclass)
+                       mxstd=lpremxstd, tol=tol, eclass=eclass, new=new)
 
+    plt.savefig(data_path + '/prepostdist' + title + ' ' + method + '.pdf', format='pdf')
     plt.show()
 
 
@@ -284,7 +303,8 @@ def study3(X, Y, ids, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4
     nsp_plus = np.array(nsp_plus)
 
     print nsp_plus.shape
-    fig = plt.figure(figsize=(20, 20))
+    matplotlib.rcParams.update({'font.size': 12})
+    fig = plt.figure(figsize=(15, 15))
     plt.suptitle(title)
     if nsp_plus.shape[0] > 0:
         ax = fig.add_subplot(422)
@@ -322,6 +342,7 @@ def study3(X, Y, ids, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4
         ax.axis([0, 500, 0, 0.1])
         sn.distplot(nsp_minus[:, 3], rug=True, hist=False)
 
+    plt.savefig(data_path + '/spikesdist' + title + ' ' + method + '.pdf', format='pdf')
     plt.show()
 
 
@@ -367,6 +388,7 @@ def study(X, Y, ids, title, wlenpre, wlenpos):
         lposint.append(smax)
         lpospos.append(pos)
 
+    matplotlib.rcParams.update({'font.size': 25})
     fig = plt.figure(figsize=(30, 10))
     plt.suptitle(title)
     ax = fig.add_subplot(131)
@@ -416,7 +438,7 @@ def study(X, Y, ids, title, wlenpre, wlenpos):
     # plt.show()
 
 
-def make_study2():
+def make_study2(sttl):
     """
     Analyzes the height of pre and post responses according to the classes of events
 
@@ -427,25 +449,26 @@ def make_study2():
     X = np.load(data_path + 'mousepre1.npy')
     Y = np.load(data_path + 'mousepost1.npy')
     id = np.load(data_path + 'mouseids1.npy')
-    study2(X, Y, id, 'Evento Positivo', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=True, tol=4,
+    study2(X, Y, id, 'Evento Positivo ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564, eclass=True, tol=4,
            method=method)
 
     X = np.load(data_path + 'mousepre0.npy')
     Y = np.load(data_path + 'mousepost0.npy')
     print(X.shape, Y.shape)
     id = np.load(data_path + 'mouseids0.npy')
-    study2(X, Y, id, 'Evento Negativo', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
+    study2(X, Y, id, 'Evento Negativo ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
            method=method)
 
     X = np.load(data_path + 'mousepre2.npy')
     Y = np.load(data_path + 'mousepost2.npy')
     print(X.shape, Y.shape)
     id = np.load(data_path + 'mouseids2.npy')
-    study2(X, Y, id, 'Evento Intermedio', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
+    study2(X, Y, id, 'Evento Intermedio ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False,
+           tol=4,
            method=method)
 
 
-def make_study3():
+def make_study3(sttl):
     """
     Analizes the statistics of event site spikes depending on the characteristics of the
     pre and post responses
@@ -458,25 +481,26 @@ def make_study3():
     Y = np.load(data_path + 'mousepost2.npy')
     print(X.shape, Y.shape)
     id = np.load(data_path + 'mouseids2.npy')
-    study3(X, Y, id, 'Evento Intermedio', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
+    study3(X, Y, id, 'Evento Intermedio ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False,
+           tol=4,
            method=method)
 
     X = np.load(data_path + 'mousepre0.npy')
     Y = np.load(data_path + 'mousepost0.npy')
     print(X.shape, Y.shape)
     id = np.load(data_path + 'mouseids0.npy')
-    study3(X, Y, id, 'Evento Negativo', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
+    study3(X, Y, id, 'Evento Negativo ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
            method=method)
 
     X = np.load(data_path + 'mousepre1.npy')
     Y = np.load(data_path + 'mousepost1.npy')
     print(X.shape, Y.shape)
     id = np.load(data_path + 'mouseids1.npy')
-    study3(X, Y, id, 'Evento Positivo', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
+    study3(X, Y, id, 'Evento Positivo ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
            method=method)
 
 
-def make_study4():
+def make_study4(sttl):
     """
     Analizes the statistics of event site spikes depending on the characteristics of the
     pre and post responses
@@ -491,28 +515,275 @@ def make_study4():
     Y = np.load(data_path + 'mousepostnew2.npy')
     print(X.shape, Y.shape)
     id = np.load(data_path + 'mouseidsnew2.npy')
-    study3(X, Y, id, 'Evento Intermedio', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
-           method=method)
+    study2(X, Y, id, 'Evento Intermedio ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False,
+           tol=4,
+           method=method, new=True)
 
     X = np.load(data_path + 'mouseprenew0.npy')
     Y = np.load(data_path + 'mousepostnew0.npy')
     print(X.shape, Y.shape)
     id = np.load(data_path + 'mouseidsnew0.npy')
-    study3(X, Y, id, 'Evento Negativo', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
-           method=method)
+    study2(X, Y, id, 'Evento Negativo ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
+           method=method, new=True)
 
     X = np.load(data_path + 'mouseprenew1.npy')
     Y = np.load(data_path + 'mousepostnew1.npy')
     print(X.shape, Y.shape)
     id = np.load(data_path + 'mouseidsnew1.npy')
-    study3(X, Y, id, 'Evento Positivo', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
-           method=method)
+    study2(X, Y, id, 'Evento Positivo ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
+           method=method, new=True)
 
+
+def distribution_study(X, Y, wlenpre, method='integral'):
+    """
+    Extract the maximum value events for distribution comparison
+    :return:
+    """
+    lpreint = []
+    if method == 'integral':
+        for i in range(X.shape[0]):
+            smax, pos, lint = max_integral(X[i], wlenpre)
+            lpreint.append(smax)
+            lint = np.array(lint)
+            smax = reduceseg(argrelextrema(lint, np.greater_equal, order=3)[0], 1)
+            mxvals = lint[smax]
+    elif method == 'max':
+        for i in range(X.shape[0]):
+            smax = np.max(X[i, :])
+            pos = np.argmax(X[i, :])
+            lpreint.append(smax)
+
+    lpreint = np.array(lpreint)
+
+    lposint = []
+    if method == 'integral':
+        for i in range(Y.shape[0]):
+            smax, pos, _ = max_integral(np.abs(Y[i]), wlenpre)
+            lposint.append(smax)
+    elif method == 'max':
+        for i in range(Y.shape[0]):
+            smax = np.max(Y[i, :])
+            lposint.append(smax)
+
+    lposint = np.array(lposint)
+
+    return lpreint, lposint
+
+
+def make_study5(sttl):
+    """
+    Analyzes the distribution of post events
+
+    :param sttl:
+    :return:
+    """
+    method = 'max'  # max integral
+    winlen = 10
+
+    X = np.load(data_path + 'mousepre1.npy')
+    Y = np.load(data_path + 'mousepost1.npy')
+    pre1, pos1 = distribution_study(X, Y, winlen, method=method)
+
+    X = np.load(data_path + 'mousepre2.npy')
+    Y = np.load(data_path + 'mousepost2.npy')
+    pre2, pos2 = distribution_study(X, Y, winlen, method=method)
+
+    X = np.load(data_path + 'mousepre0.npy')
+    Y = np.load(data_path + 'mousepost0.npy')
+    pre0, pos0 = distribution_study(X, Y, winlen, method=method)
+
+    matplotlib.rcParams.update({'font.size': 12})
+    fig = plt.figure(figsize=(15, 10))
+    plt.suptitle(sttl)
+    for i, (datapre, datapos, label) in enumerate(zip([pre1, pre0, pre2],
+                                                      [pos1, pos0, pos2],
+                                                      ['positivo', 'negativo', 'intermedio'])):
+        ax1 = fig.add_subplot(3, 3, 3 * i + 1)
+        ax1.axis([0, 15, 0, 1])
+        ax1.set_xlabel(label)
+        sn.distplot(datapos, kde=True, hist=False, rug=True)
+        ax2 = fig.add_subplot(3, 3, 3 * i + 3)
+        ax2.axis([0, 15, 0, 1])
+        ax2.set_xlabel(label + ' POST < PRE')
+        datasel = datapos[datapos <= datapre]
+        if len(datasel) > 0:
+            sn.distplot(datasel, kde=True, hist=False, rug=True)
+        ax3 = fig.add_subplot(3, 3, 3 * i + 2)
+        ax3.axis([0, 15, 0, 1])
+        ax3.set_xlabel(label + ' POST > PRE')
+        datasel = datapos[datapos > datapre]
+        if len(datasel) > 0:
+            sn.distplot(datasel, kde=True, hist=False, rug=True)
+        if label in ['negativo', 'intermedio']:
+            ax1.text(4, 0.8, 'KS pv = ' + str(ks_2samp(pos1, datapos).pvalue))
+            possel = datapos[datapos > datapre]
+            ax2.text(4, 0.8, 'KS pv = ' + str(ks_2samp(pos1, possel).pvalue))
+            possel = datapos[datapos <= datapre]
+            ax3.text(4, 0.8, 'KS pv = ' + str(ks_2samp(pos1, possel).pvalue))
+
+    plt.savefig(data_path + '/posttest' + sttl + ' ' + method + '.pdf', format='pdf')
+    plt.show()
+
+
+def spikes_frequency_graphs(X, Y, ids, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4, method='max'):
+    """
+    Graphs of the spikes frequency (0:200)(200:500)
+
+    :return:
+    """
+    client = MongoClient('mongodb://localhost:27017/')
+    col = client.MouseBrain.Spikes
+
+    lpreint = []
+    lprepos = []
+    lpremxstd = []
+    if method == 'integral':
+        for i in range(X.shape[0]):
+            smax, pos, lint = max_integral(X[i], wlenpre)
+            lpreint.append(smax)
+            lprepos.append(pos + (wlenpre / 2))
+            lint = np.array(lint)
+            smax = reduceseg(argrelextrema(lint, np.greater_equal, order=3)[0], 1)
+            mxvals = lint[smax]
+            lpremxstd.append(np.std(mxvals))
+    elif method == 'max':
+        for i in range(X.shape[0]):
+            smax = np.max(X[i, :])
+            pos = np.argmax(X[i, :])
+            lpreint.append(smax)
+            lprepos.append(pos)
+            lpremxstd.append(0)
+
+    lpreint = np.array(lpreint)
+
+    lposint = []
+    lpospos = []
+    if method == 'integral':
+        for i in range(Y.shape[0]):
+            smax, pos, _ = max_integral(np.abs(Y[i]), wlenpre)
+            lposint.append(smax)
+            lpospos.append(pos + (wlenpos / 2))
+    elif method == 'max':
+        for i in range(Y.shape[0]):
+            smax = np.max(Y[i, :])
+            pos = np.argmax(Y[i, :])
+            lposint.append(smax)
+            lpospos.append(pos)
+
+    wtpre = wlenpre * (1000 / freq)
+
+    nsp_plus = []
+    nsp_minus = []
+    for id, prei, posti in zip(ids, lpreint, lposint):
+        vals = col.find_one({'code': id}, {'stmtime': 1, 'stmspikes': 1})
+        stmspikes = cPickle.loads(vals['stmspikes'])
+        stmtime = vals['stmtime']
+        vspikes = (np.array(stmspikes) - stmtime) * 1000
+        if vspikes.shape[0] > 2:
+            sp200 = np.sum(vspikes <= 200) * 10.0
+            sp500 = np.sum(vspikes > 200) * (10.0 / 3.0)
+            sptot = vspikes.shape[0] * 2.0
+
+            if posti > prei:
+                nsp_plus.append([sp200, sp500, sptot])
+            else:
+                nsp_minus.append([sp200, sp500, sptot])
+
+    nsp_minus = np.array(nsp_minus)
+    nsp_plus = np.array(nsp_plus)
+
+    print nsp_plus.shape
+    matplotlib.rcParams.update({'font.size': 12})
+    fig = plt.figure(figsize=(15, 15))
+    plt.suptitle(title)
+    if nsp_plus.shape[0] > 0:
+        ax = fig.add_subplot(421)
+        ax.axis([0, 250, 0, 0.025])
+        ax.set_xlabel('POST > PRE')
+        sn.distplot(nsp_plus[:, 0], rug=True, hist=False)
+    if nsp_minus.shape[0] > 0:
+        ax = fig.add_subplot(422)
+        ax.axis([0, 250, 0, 0.025])
+        ax.set_xlabel('POST < PRE')
+        sn.distplot(nsp_minus[:, 0], rug=True, hist=False)
+
+    if nsp_plus.shape[0] > 0:
+        ax = fig.add_subplot(423)
+        ax.axis([0, 250, 0, 0.025])
+        ax.set_xlabel('POST > PRE')
+        sn.distplot(nsp_plus[:, 1], rug=True, hist=False)
+    if nsp_minus.shape[0] > 0:
+        ax = fig.add_subplot(424)
+        ax.axis([0, 250, 0, 0.025])
+        ax.set_xlabel('POST < PRE')
+        sn.distplot(nsp_minus[:, 1], rug=True, hist=False)
+
+    if nsp_plus.shape[0] > 0:
+        ax = fig.add_subplot(425)
+        ax.axis([0, 250, 0, 0.025])
+        ax.set_xlabel('POST > PRE')
+        sn.distplot(nsp_plus[:, 2], rug=True, hist=False)
+    if nsp_minus.shape[0] > 0:
+        ax = fig.add_subplot(426)
+        ax.axis([0, 250, 0, 0.025])
+        ax.set_xlabel('POST < PRE')
+        sn.distplot(nsp_minus[:, 2], rug=True, hist=False)
+
+    if nsp_plus.shape[0] > 0:
+        ax = fig.add_subplot(427)
+        ax.axis([0, 250, 0, 250])
+        ax.set_xlabel('POST > PRE')
+        plt.scatter(nsp_plus[:, 0], nsp_plus[:, 1])
+    if nsp_minus.shape[0] > 0:
+        ax = fig.add_subplot(428)
+        ax.axis([0, 250, 0, 250])
+        plt.scatter(nsp_minus[:, 0], nsp_minus[:, 1])
+        ax.set_xlabel('POST < PRE')
+
+    plt.savefig(data_path + '/spikesfreq' + title + ' ' + method + '.pdf', format='pdf')
+    plt.show()
+
+
+def make_study6(sttl):
+    """
+    Study of spikes frequency
+
+    :return:
+    """
+    method = 'max'  # max integral
+    winlen = 10
+    X = np.load(data_path + 'mousepre2.npy')
+    Y = np.load(data_path + 'mousepost2.npy')
+    print(X.shape, Y.shape)
+    id = np.load(data_path + 'mouseids2.npy')
+    spikes_frequency_graphs(X, Y, id, 'Evento Intermedio ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564,
+                            eclass=False, tol=4,
+                            method=method)
+
+    X = np.load(data_path + 'mousepre0.npy')
+    Y = np.load(data_path + 'mousepost0.npy')
+    print(X.shape, Y.shape)
+    id = np.load(data_path + 'mouseids0.npy')
+    spikes_frequency_graphs(X, Y, id, 'Evento Negativo ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564,
+                            eclass=False, tol=4,
+                            method=method)
+
+    X = np.load(data_path + 'mousepre1.npy')
+    Y = np.load(data_path + 'mousepost1.npy')
+    print(X.shape, Y.shape)
+    id = np.load(data_path + 'mouseids1.npy')
+    spikes_frequency_graphs(X, Y, id, 'Evento Positivo ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564,
+                            eclass=False, tol=4,
+                            method=method)
 
 
 if __name__ == '__main__':
     # X = np.load(data_path + 'mousepre2.npy')
     # Y = np.load(data_path + 'mousepost2.npy')
     # id = np.load(data_path + 'mouseids2.npy')
+    make_study2('Orig')
+    make_study4('TPS')
 
-    make_study4()
+    make_study5('Orig')
+
+    make_study6('Orig')
