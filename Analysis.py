@@ -625,7 +625,7 @@ def make_study5(sttl):
     plt.show()
 
 
-def spikes_frequency_graphs(X, Y, ids, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4, method='max'):
+def spikes_frequency_graphs(X, Y, ids, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4, method='max', graph=False):
     """
     Graphs of the spikes frequency (0:200)(200:500)
 
@@ -692,57 +692,58 @@ def spikes_frequency_graphs(X, Y, ids, title, wlenpre, wlenpos, off=0, freq=0, e
     nsp_minus = np.array(nsp_minus)
     nsp_plus = np.array(nsp_plus)
 
-    print nsp_plus.shape
-    matplotlib.rcParams.update({'font.size': 12})
-    fig = plt.figure(figsize=(15, 15))
-    plt.suptitle(title)
-    if nsp_plus.shape[0] > 0:
-        ax = fig.add_subplot(421)
-        ax.axis([0, 250, 0, 0.025])
-        ax.set_xlabel('POST > PRE')
-        sn.distplot(nsp_plus[:, 0], rug=True, hist=False)
-    if nsp_minus.shape[0] > 0:
-        ax = fig.add_subplot(422)
-        ax.axis([0, 250, 0, 0.025])
-        ax.set_xlabel('POST < PRE')
-        sn.distplot(nsp_minus[:, 0], rug=True, hist=False)
+    # print nsp_plus.shape
+    if graph:
+        matplotlib.rcParams.update({'font.size': 12})
+        fig = plt.figure(figsize=(15, 15))
+        plt.suptitle(title)
+        if nsp_plus.shape[0] > 0:
+            ax = fig.add_subplot(421)
+            ax.axis([0, 250, 0, 0.025])
+            ax.set_xlabel('POST > PRE')
+            sn.distplot(nsp_plus[:, 0], rug=True, hist=False)
+        if nsp_minus.shape[0] > 0:
+            ax = fig.add_subplot(422)
+            ax.axis([0, 250, 0, 0.025])
+            ax.set_xlabel('POST < PRE')
+            sn.distplot(nsp_minus[:, 0], rug=True, hist=False)
 
-    if nsp_plus.shape[0] > 0:
-        ax = fig.add_subplot(423)
-        ax.axis([0, 250, 0, 0.025])
-        ax.set_xlabel('POST > PRE')
-        sn.distplot(nsp_plus[:, 1], rug=True, hist=False)
-    if nsp_minus.shape[0] > 0:
-        ax = fig.add_subplot(424)
-        ax.axis([0, 250, 0, 0.025])
-        ax.set_xlabel('POST < PRE')
-        sn.distplot(nsp_minus[:, 1], rug=True, hist=False)
+        if nsp_plus.shape[0] > 0:
+            ax = fig.add_subplot(423)
+            ax.axis([0, 250, 0, 0.025])
+            ax.set_xlabel('POST > PRE')
+            sn.distplot(nsp_plus[:, 1], rug=True, hist=False)
+        if nsp_minus.shape[0] > 0:
+            ax = fig.add_subplot(424)
+            ax.axis([0, 250, 0, 0.025])
+            ax.set_xlabel('POST < PRE')
+            sn.distplot(nsp_minus[:, 1], rug=True, hist=False)
 
-    if nsp_plus.shape[0] > 0:
-        ax = fig.add_subplot(425)
-        ax.axis([0, 250, 0, 0.025])
-        ax.set_xlabel('POST > PRE')
-        sn.distplot(nsp_plus[:, 2], rug=True, hist=False)
-    if nsp_minus.shape[0] > 0:
-        ax = fig.add_subplot(426)
-        ax.axis([0, 250, 0, 0.025])
-        ax.set_xlabel('POST < PRE')
-        sn.distplot(nsp_minus[:, 2], rug=True, hist=False)
+        if nsp_plus.shape[0] > 0:
+            ax = fig.add_subplot(425)
+            ax.axis([0, 250, 0, 0.025])
+            ax.set_xlabel('POST > PRE')
+            sn.distplot(nsp_plus[:, 2], rug=True, hist=False)
+        if nsp_minus.shape[0] > 0:
+            ax = fig.add_subplot(426)
+            ax.axis([0, 250, 0, 0.025])
+            ax.set_xlabel('POST < PRE')
+            sn.distplot(nsp_minus[:, 2], rug=True, hist=False)
 
-    if nsp_plus.shape[0] > 0:
-        ax = fig.add_subplot(427)
-        ax.axis([0, 250, 0, 250])
-        ax.set_xlabel('POST > PRE')
-        plt.scatter(nsp_plus[:, 0], nsp_plus[:, 1])
-    if nsp_minus.shape[0] > 0:
-        ax = fig.add_subplot(428)
-        ax.axis([0, 250, 0, 250])
-        plt.scatter(nsp_minus[:, 0], nsp_minus[:, 1])
-        ax.set_xlabel('POST < PRE')
+        if nsp_plus.shape[0] > 0:
+            ax = fig.add_subplot(427)
+            ax.axis([0, 250, 0, 250])
+            ax.set_xlabel('POST > PRE')
+            plt.scatter(nsp_plus[:, 0], nsp_plus[:, 1])
+        if nsp_minus.shape[0] > 0:
+            ax = fig.add_subplot(428)
+            ax.axis([0, 250, 0, 250])
+            plt.scatter(nsp_minus[:, 0], nsp_minus[:, 1])
+            ax.set_xlabel('POST < PRE')
 
-    plt.savefig(data_path + '/spikesfreq' + title + ' ' + method + '.pdf', format='pdf')
-    plt.show()
-
+        plt.savefig(data_path + '/spikesfreq' + title + ' ' + method + '.pdf', format='pdf')
+        plt.show()
+    return nsp_minus, nsp_plus
 
 def make_study6(sttl):
     """
@@ -756,7 +757,7 @@ def make_study6(sttl):
     Y = np.load(data_path + 'mousepost2.npy')
     print(X.shape, Y.shape)
     id = np.load(data_path + 'mouseids2.npy')
-    spikes_frequency_graphs(X, Y, id, 'Evento Intermedio ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564,
+    minus2, plus2 = spikes_frequency_graphs(X, Y, id, 'Evento Intermedio ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564,
                             eclass=False, tol=4,
                             method=method)
 
@@ -764,7 +765,7 @@ def make_study6(sttl):
     Y = np.load(data_path + 'mousepost0.npy')
     print(X.shape, Y.shape)
     id = np.load(data_path + 'mouseids0.npy')
-    spikes_frequency_graphs(X, Y, id, 'Evento Negativo ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564,
+    minus0, plus0 = spikes_frequency_graphs(X, Y, id, 'Evento Negativo ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564,
                             eclass=False, tol=4,
                             method=method)
 
@@ -772,18 +773,147 @@ def make_study6(sttl):
     Y = np.load(data_path + 'mousepost1.npy')
     print(X.shape, Y.shape)
     id = np.load(data_path + 'mouseids1.npy')
-    spikes_frequency_graphs(X, Y, id, 'Evento Positivo ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564,
+    minus1, plus1 = spikes_frequency_graphs(X, Y, id, 'Evento Positivo ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564,
                             eclass=False, tol=4,
                             method=method)
 
+    fig = plt.figure(figsize=(15, 15))
+    plt.suptitle('POS vs INT (POS>PRE)')
+    ax = fig.add_subplot(321)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Normal 200ms')
+    sn.distplot(plus1[:, 0], rug=True, hist=False)
+    ax = fig.add_subplot(322)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Inter POST > PRE 200ms')
+    ax.text(100, 0.02, 'KS pv = ' + str(ks_2samp(plus1[:,0],plus2[:,0]).pvalue))
+    sn.distplot(plus2[:, 0], rug=True, hist=False)
+    ax = fig.add_subplot(323)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Normal 300-500ms')
+    sn.distplot(plus1[:, 1], rug=True, hist=False)
+    ax = fig.add_subplot(324)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Inter POST > PRE 300-500ms')
+    ax.text(100, 0.02, 'KS pv = ' + str(ks_2samp(plus1[:,1],plus2[:,1]).pvalue))
+    sn.distplot(plus2[:, 1], rug=True, hist=False)
+    ax = fig.add_subplot(325)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Normal 500ms')
+    sn.distplot(plus1[:, 2], rug=True, hist=False)
+    ax = fig.add_subplot(326)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Inter POST > PRE 500ms')
+    ax.text(100, 0.02, 'KS pv = ' + str(ks_2samp(plus1[:,2],plus2[:,2]).pvalue))
+    sn.distplot(plus2[:, 2], rug=True, hist=False)
+    plt.savefig(data_path + '/spkfreqtestPOSvsINTPOSmxPRE.pdf', format='pdf')
+    plt.show()
+
+    fig = plt.figure(figsize=(15, 15))
+    ax = fig.add_subplot(321)
+    plt.suptitle('POS vs INT (POS<PRE)')
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Normal 200ms')
+    sn.distplot(plus1[:, 0], rug=True, hist=False)
+    ax = fig.add_subplot(322)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Inter POST < PRE 200ms')
+    ax.text(100, 0.02, 'KS pv = ' + str(ks_2samp(plus1[:,0],minus2[:,0]).pvalue))
+    sn.distplot(minus2[:, 0], rug=True, hist=False)
+    ax = fig.add_subplot(323)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Normal 300-500ms')
+    sn.distplot(plus1[:, 1], rug=True, hist=False)
+    ax = fig.add_subplot(324)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Inter POST < PRE 300-500ms')
+    ax.text(100, 0.02, 'KS pv = ' + str(ks_2samp(plus1[:,1],minus2[:,1]).pvalue))
+    sn.distplot(minus2[:, 1], rug=True, hist=False)
+    ax = fig.add_subplot(325)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Normal 500ms')
+    sn.distplot(plus1[:, 2], rug=True, hist=False)
+    ax = fig.add_subplot(326)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Inter POST < PRE 500ms')
+    ax.text(100, 0.02, 'KS pv = ' + str(ks_2samp(plus1[:,2],minus2[:,2]).pvalue))
+    sn.distplot(minus2[:, 2], rug=True, hist=False)
+    plt.savefig(data_path + '/spkfreqtestPOSvsINTPOSmnPRE.pdf', format='pdf')
+    plt.show()
+
+    fig = plt.figure(figsize=(15, 15))
+    ax = fig.add_subplot(321)
+    plt.suptitle('POS vs NEG (POS>PRE)')
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Normal 200ms')
+    sn.distplot(plus1[:, 0], rug=True, hist=False)
+    ax = fig.add_subplot(322)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Neg POST > PRE 200ms')
+    ax.text(100, 0.02, 'KS pv = ' + str(ks_2samp(plus1[:,0],plus0[:,0]).pvalue))
+    sn.distplot(plus0[:, 0], rug=True, hist=False)
+    ax = fig.add_subplot(323)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Normal 300-500ms')
+    sn.distplot(plus1[:, 1], rug=True, hist=False)
+    ax = fig.add_subplot(324)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Neg POST > PRE 300-500ms')
+    ax.text(100, 0.02, 'KS pv = ' + str(ks_2samp(plus1[:,1],plus0[:,1]).pvalue))
+    sn.distplot(plus0[:, 1], rug=True, hist=False)
+    ax = fig.add_subplot(325)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Normal 500ms')
+    sn.distplot(plus1[:, 2], rug=True, hist=False)
+    ax = fig.add_subplot(326)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Neg POST > PRE 500ms')
+    ax.text(100, 0.02, 'KS pv = ' + str(ks_2samp(plus1[:,2],plus0[:,2]).pvalue))
+    sn.distplot(plus0[:, 2], rug=True, hist=False)
+    plt.savefig(data_path + '/spkfreqtestPOSvsNEGPOSmxPRE.pdf', format='pdf')
+
+    plt.show()
+
+    fig = plt.figure(figsize=(15, 15))
+    plt.suptitle('POS vs NEG (POS<PRE)')
+    ax = fig.add_subplot(321)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Normal 200ms')
+    sn.distplot(plus1[:, 0], rug=True, hist=False)
+    ax = fig.add_subplot(322)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Neg POST < PRE 200ms')
+    ax.text(100, 0.02, 'KS pv = ' + str(ks_2samp(plus1[:,0],minus0[:,0]).pvalue))
+    sn.distplot(minus0[:, 0], rug=True, hist=False)
+    ax = fig.add_subplot(323)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Normal 300-500ms')
+    sn.distplot(plus1[:, 1], rug=True, hist=False)
+    ax = fig.add_subplot(324)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Neg POST < PRE 300-500ms')
+    ax.text(100, 0.02, 'KS pv = ' + str(ks_2samp(plus1[:,1],minus0[:,1]).pvalue))
+    sn.distplot(minus0[:, 1], rug=True, hist=False)
+    ax = fig.add_subplot(325)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Normal 500ms')
+    sn.distplot(plus1[:, 2], rug=True, hist=False)
+    ax = fig.add_subplot(326)
+    ax.axis([0, 250, 0, 0.025])
+    ax.set_xlabel('Neg POST < PRE 500ms')
+    ax.text(100, 0.02, 'KS pv = ' + str(ks_2samp(plus1[:,2],minus0[:,2]).pvalue))
+    sn.distplot(minus0[:, 2], rug=True, hist=False)
+
+    plt.savefig(data_path + '/spkfreqtestPOSvsNEGPOSmnPRE.pdf', format='pdf')
+    plt.show()
 
 if __name__ == '__main__':
     # X = np.load(data_path + 'mousepre2.npy')
     # Y = np.load(data_path + 'mousepost2.npy')
     # id = np.load(data_path + 'mouseids2.npy')
-    make_study2('Orig')
-    make_study4('TPS')
+    # make_study2('Orig')
+    # make_study4('TPS')
 
-    make_study5('Orig')
+    # make_study5('Orig')
 
     make_study6('Orig')
