@@ -30,16 +30,20 @@ if __name__ == '__main__':
     files = sorted([name.split('/')[-1].split('.')[0] for name in glob.glob(data_path + '/*.smr')])
 
     split = True
+    threshold = 1.5
     experiments = []
     experiments2 = []
     labels = []
     ids = []
+    nfiles = 0
     for file in files:
         if file not in ['Exp006'] \
                 and (file in ['Exp%03d' % i for i in range(26, 105)]\
                 or file in ['Exp%03d' % i for i in range(7, 13)]\
                 or file in ['Exp%03d' % i for i in range(16, 21)]):
             # if file in ['Exp019', 'Exp020', 'Exp021', 'Exp022', 'Exp013', 'Exp014', 'Exp015']:
+            print file
+            nfiles += 1
             data = Dataset(file)
             data.read(normalize=False)
             if data.ok and data.sampling > 100.0:
@@ -47,7 +51,7 @@ if __name__ == '__main__':
 
                 data.extract_events(1.5, 0.5)
 
-                mat = data.get_events_data(discard=0.025, split=split, normalize=True)
+                mat = data.get_events_data(discard=0.035, split=split, normalize=True)
 
                 if split:
                     experiments.append(mat[0])
@@ -61,10 +65,11 @@ if __name__ == '__main__':
                 data.read(normalize=True)
                 data.downsample(256.4102564102564)
                 data.extract_events(1.5, 0.5)
-                data.mark_spikes(1.75, 0.035)
+                data.mark_spikes(threshold, 0.035)
                 data.mark_pre_events()
-                labels.append(data.assign_labels())
+                labels.append(data.assign_labels(discard=0.035, threshold=threshold))
                 ids.append(lid)
+    print nfiles
     nev = 0
 
     ldatamat = np.concatenate(labels)
@@ -74,6 +79,7 @@ if __name__ == '__main__':
         datamat = np.concatenate(experiments)
         datamat2 = np.concatenate(experiments2)
         for dl in np.unique(ldatamat):
+            print dl, ldatamat[ldatamat == dl].shape[0]
             nev += ldatamat[ldatamat == dl].shape[0]
             np.save(save_path + 'mouseids'+str(dl)+'.npy', ids[ldatamat == dl])
 

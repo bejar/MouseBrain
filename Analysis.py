@@ -114,7 +114,7 @@ def plot_positions(id, eleft, eright, axes, data, mxstd, tol=2, eclass=True, new
                 cm = 'k' if mxstd[ip] > tol else clm
                 ax1.plot([prep], [prei], cm, marker=mark)
                 ax1.plot([posp], [posi], clm, marker=mark)
-                print(id[ip], prei, posi)
+                # print(id[ip], prei, posi)
                 ax3.plot(posi, prei, clm, marker=mark)
                 if prei >= posi:
                     ax3.set_xlabel('POST < PRE')
@@ -133,7 +133,7 @@ def plot_positions(id, eleft, eright, axes, data, mxstd, tol=2, eclass=True, new
                     ax4.set_xlabel('POST > PRE')
 
 
-def study2(X, Y, id, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4, method='integral', new=False):
+def study2(X, Y, id, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4, method='integral', new=False, testing=False):
     """
     Study of mouse events
     
@@ -179,6 +179,9 @@ def study2(X, Y, id, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4,
     elif method == 'max':
         for i in range(Y.shape[0]):
             smax = np.max(Y[i, :])
+            if testing:
+                if smax > 2:
+                    print id[i], i
             pos = np.argmax(Y[i, :])
             lposint.append(smax)
             lpospos.append(pos)
@@ -457,7 +460,7 @@ def make_study2(sttl):
     print(X.shape, Y.shape)
     id = np.load(data_path + 'mouseids0.npy')
     study2(X, Y, id, 'Evento Negativo ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
-           method=method)
+           method=method, testing=True)
 
     X = np.load(data_path + 'mousepre2.npy')
     Y = np.load(data_path + 'mousepost2.npy')
@@ -790,11 +793,11 @@ def make_study6(sttl):
     sn.distplot(plus2[:, 0], rug=True, hist=False)
     ax = fig.add_subplot(323)
     ax.axis([0, 250, 0, 0.025])
-    ax.set_xlabel('Normal 300-500ms')
+    ax.set_xlabel('Normal 200-500ms')
     sn.distplot(plus1[:, 1], rug=True, hist=False)
     ax = fig.add_subplot(324)
     ax.axis([0, 250, 0, 0.025])
-    ax.set_xlabel('Inter POST > PRE 300-500ms')
+    ax.set_xlabel('Inter POST > PRE 200-500ms')
     ax.text(100, 0.02, 'KS pv = ' + str(ks_2samp(plus1[:,1],plus2[:,1]).pvalue))
     sn.distplot(plus2[:, 1], rug=True, hist=False)
     ax = fig.add_subplot(325)
@@ -803,7 +806,7 @@ def make_study6(sttl):
     sn.distplot(plus1[:, 2], rug=True, hist=False)
     ax = fig.add_subplot(326)
     ax.axis([0, 250, 0, 0.025])
-    ax.set_xlabel('Inter POST > PRE 500ms')
+    ax.set_xlabel('Inter POST > PRE 200ms')
     ax.text(100, 0.02, 'KS pv = ' + str(ks_2samp(plus1[:,2],plus2[:,2]).pvalue))
     sn.distplot(plus2[:, 2], rug=True, hist=False)
     plt.savefig(data_path + '/spkfreqtestPOSvsINTPOSmxPRE.pdf', format='pdf')
@@ -822,11 +825,11 @@ def make_study6(sttl):
     sn.distplot(minus2[:, 0], rug=True, hist=False)
     ax = fig.add_subplot(323)
     ax.axis([0, 250, 0, 0.025])
-    ax.set_xlabel('Normal 300-500ms')
+    ax.set_xlabel('Normal 200-500ms')
     sn.distplot(plus1[:, 1], rug=True, hist=False)
     ax = fig.add_subplot(324)
     ax.axis([0, 250, 0, 0.025])
-    ax.set_xlabel('Inter POST < PRE 300-500ms')
+    ax.set_xlabel('Inter POST < PRE 200-500ms')
     ax.text(100, 0.02, 'KS pv = ' + str(ks_2samp(plus1[:,1],minus2[:,1]).pvalue))
     sn.distplot(minus2[:, 1], rug=True, hist=False)
     ax = fig.add_subplot(325)
@@ -854,7 +857,7 @@ def make_study6(sttl):
     sn.distplot(plus0[:, 0], rug=True, hist=False)
     ax = fig.add_subplot(323)
     ax.axis([0, 250, 0, 0.025])
-    ax.set_xlabel('Normal 300-500ms')
+    ax.set_xlabel('Normal 200-500ms')
     sn.distplot(plus1[:, 1], rug=True, hist=False)
     ax = fig.add_subplot(324)
     ax.axis([0, 250, 0, 0.025])
@@ -887,7 +890,7 @@ def make_study6(sttl):
     sn.distplot(minus0[:, 0], rug=True, hist=False)
     ax = fig.add_subplot(323)
     ax.axis([0, 250, 0, 0.025])
-    ax.set_xlabel('Normal 300-500ms')
+    ax.set_xlabel('Normal 200-500ms')
     sn.distplot(plus1[:, 1], rug=True, hist=False)
     ax = fig.add_subplot(324)
     ax.axis([0, 250, 0, 0.025])
@@ -911,7 +914,7 @@ if __name__ == '__main__':
     # X = np.load(data_path + 'mousepre2.npy')
     # Y = np.load(data_path + 'mousepost2.npy')
     # id = np.load(data_path + 'mouseids2.npy')
-    # make_study2('Orig')
+    make_study2('Orig')
     # make_study4('TPS')
 
     # make_study5('Orig')

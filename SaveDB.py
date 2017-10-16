@@ -30,7 +30,8 @@ __author__ = 'bejar'
 
 
 if __name__ == '__main__':
-    npath = '/home/bejar/storage/Data/Mouse3/03-04-2017/'
+    # npath = '/home/bejar/storage/Data/Mouse3/03-04-2017/'
+    npath = data_path
     files = sorted([name.split('/')[-1].split('.')[0] for name in glob.glob(npath + '/*.smr')])
 
     # files = sorted([name.split('/')[-1].split('.')[0] for name in glob.glob(data_path + '/*.smr')])
@@ -43,16 +44,19 @@ if __name__ == '__main__':
     experiments2 = []
     labels = []
 
-    sigma = 1.75
+    sigma = 2
     latencia = 0.025
     discard = 0.01
     for file in files:
-        if file not in ['Exp006']:
+        if file not in ['Exp006'] \
+                and (file in ['Exp%03d' % i for i in range(26, 105)]\
+                or file in ['Exp%03d' % i for i in range(7, 13)]\
+                or file in ['Exp%03d' % i for i in range(16, 21)]):
             print(file)
-            data = Dataset(file, path=npath, type='two')
+            data = Dataset(file, path=npath, type='one')
             data.read(normalize=False)
             # data.describe()
-            if data.ok and data.sampling > 150.0:
+            if data.ok and data.sampling > 100.0:
                 dsamp = data.sampling
                 nev += data.events.shape[0]
                 if  data.sampling>257:
@@ -67,12 +71,12 @@ if __name__ == '__main__':
                 # for i in range(10):
                 #     data.show_event(i)
 
-                mat = data.get_events_data(discard=discard, split=True, normalize=True)
+                mat = data.get_events_data(discard=latencia + discard, split=True, normalize=True)
 
                 predata = mat[0]
                 postdata = mat[1]
 
-                data = Dataset(file, path=npath, type='two')
+                data = Dataset(file, path=npath, type='one')
                 data.read(normalize=True)
                 if  data.sampling>257:
                     data.downsample(256.4102564102564)
@@ -85,7 +89,7 @@ if __name__ == '__main__':
                 ospikes = data.orig_eventsarray
                 spostmarks = data.post_marks
                 spremarks = data.pre_marks
-                labels = data.assign_labels()
+                labels = data.assign_labels(discard=latencia + discard, threshold=sigma)
                 vmax = max(np.max(postdata), np.max(predata))
                 vmin = min(np.min(postdata), np.min(predata))
                 stmspikes = data.events_spikes

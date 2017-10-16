@@ -235,7 +235,7 @@ class Dataset:
                 if self.pre_marks[i, 1] == 0 and self.post_marks[i, 0] != 0:
                     self.pre_marks[i, 1] = self.wbefore
 
-    def assign_labels(self):
+    def assign_labels(self, discard=None, threshold=1.5):
         """
         Returns the labels for the spikes (0 or 1 whether there is a spike large enough after the event
         :return:
@@ -243,12 +243,26 @@ class Dataset:
         if self.post_marks is None or self.pre_marks is None:
             raise Exception('Events not marked')
         else:
+            if discard is not None:
+                vdiscard = int(self.sampling * discard)
+            else:
+                vdiscard = 0
+            prem = self.events_array[:, :self.wbefore - vdiscard]
+            posm = self.events_array[:, self.wbefore + vdiscard:]
+            join = np.column_stack((prem, posm))
+
+            # exmn = np.mean(join)
+            # exstd = np.std(join)
+            # prem = (prem - exmn) / exstd
+            # posm = (posm - exmn) / exstd
+
+
             labels = []
 
             for i in range(len(self.events)):
-                if self.post_marks[i,0] == 0:
+                if np.max(posm[i,:]) < threshold:
                     labels.append(0)
-                elif self.pre_marks[i,0] == 0:
+                elif np.max(prem[i,:]) < threshold:
                     labels.append(1)
                 else:
                     labels.append(2)
