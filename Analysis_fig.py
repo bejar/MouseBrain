@@ -199,6 +199,88 @@ def study2(X, Y, id, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4,
     plt.savefig(data_path + '/PeakMaxDist' + nfile + '.pdf', format='pdf')
     plt.show()
 
+
+
+
+def study2_5(X, Y, id, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4, method='integral', new=False, nfile=''):
+    """
+    Study of mouse events
+
+    :param X:
+    :param Y:
+    :return:
+    """
+    postmid = int(Y.shape[0])
+    lintpre = [np.sum(np.abs(X[i])) for i in range(X.shape[0])]
+    lintpost = [np.sum(np.abs(Y[i, 0:postmid])) for i in range(Y.shape[0])]
+
+    lpreint = []
+    lprepos = []
+    lpremxstd = []
+    if method == 'integral':
+        for i in range(X.shape[0]):
+            smax, pos, lint = max_integral(X[i], wlenpre)
+            lpreint.append(smax)
+            lprepos.append(pos + (wlenpre / 2))
+            lint = np.array(lint)
+            smax = reduceseg(argrelextrema(lint, np.greater_equal, order=3)[0], 1)
+            mxvals = lint[smax]
+            lpremxstd.append(np.std(mxvals))
+    elif method == 'max':
+        for i in range(X.shape[0]):
+            smax = np.max(X[i, :])
+            pos = np.argmax(X[i, :])
+            lpreint.append(smax)
+            lprepos.append(pos)
+            lpremxstd.append(0)
+
+    lpreint = np.array(lpreint)
+
+    sel = lpreint > 30
+
+    lposint = []
+    lpospos = []
+    if method == 'integral':
+        for i in range(Y.shape[0]):
+            smax, pos, _ = max_integral(np.abs(Y[i]), wlenpre)
+            lposint.append(smax)
+            lpospos.append(pos + (wlenpos / 2))
+    elif method == 'max':
+        for i in range(Y.shape[0]):
+            smax = np.max(Y[i, :])
+            pos = np.argmax(Y[i, :])
+            lposint.append(smax)
+            lpospos.append(pos)
+
+    wtpre = wlenpre * (1000 / freq)
+    wtpos = wlenpos * (1000 / freq)
+    lprepos = (np.array(lprepos) * (1000 / freq)) - (1500 - (wtpre / 2))
+    lpospos = np.array(lpospos) * (1000 / freq) + (off * 1000)
+
+    maxrange = 15
+    maxrangeX = 15
+    maxrangeY = 15
+
+    ddata = {}
+    for p, lim in enumerate([-1500, -1000, -500]):
+        ddata[p] = [[],[]]
+
+        for prep, prei, posp, posi in zip(lprepos, lpreint, lpospos, lposint):
+            if lim < prep < (lim+500):
+                if (eclass and prei < posi) or (not eclass and prei > posi):
+                    ddata[p][0].append(prei)
+                    ddata[p][1].append(posi)
+
+    for d in ddata:
+        print(len(ddata[d][0]))
+
+    print(ks_2samp(ddata[0][0], ddata[1][0]).pvalue)
+    print(ks_2samp(ddata[0][0], ddata[2][0]).pvalue)
+    print(ks_2samp(ddata[1][0], ddata[2][0]).pvalue)
+    print(ks_2samp(ddata[0][1], ddata[1][1]).pvalue)
+    print(ks_2samp(ddata[0][1], ddata[2][1]).pvalue)
+    print(ks_2samp(ddata[1][1], ddata[2][1]).pvalue)
+
 def make_study2(sttl):
     """
     Analyzes the height of pre and post responses according to the classes of events
@@ -228,40 +310,35 @@ def make_study2(sttl):
            tol=4, method=method, nfile='INT')
 
 
-def distribution_study(X, Y, wlenpre, method='integral'):
+def make_study2_5(sttl):
     """
-    Extract the maximum value events for distribution comparison
+    Analyzes the height of pre and post responses according to the classes of events
+    Distribution tests
+
     :return:
     """
-    lpreint = []
-    if method == 'integral':
-        for i in range(X.shape[0]):
-            smax, pos, lint = max_integral(X[i], wlenpre)
-            lpreint.append(smax)
-            lint = np.array(lint)
-            smax = reduceseg(argrelextrema(lint, np.greater_equal, order=3)[0], 1)
-            mxvals = lint[smax]
-    elif method == 'max':
-        for i in range(X.shape[0]):
-            smax = np.max(X[i, :])
-            pos = np.argmax(X[i, :])
-            lpreint.append(smax)
+    method = 'max'  # max integral
+    winlen = 10
+    X = np.load(data_path + 'mousepre1.npy')
+    Y = np.load(data_path + 'mousepost1.npy')
+    id = np.load(data_path + 'mouseids1.npy')
+    study2_5(X, Y, id, 'Positive Events ', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=True, tol=4,
+           method=method, nfile='POS')
 
-    lpreint = np.array(lpreint)
+    X = np.load(data_path + 'mousepre0.npy')
+    Y = np.load(data_path + 'mousepost0.npy')
+    print(X.shape, Y.shape)
+    id = np.load(data_path + 'mouseids0.npy')
+    study2_5(X, Y, id, 'Negative Events', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
+           method=method, nfile='NEG')
 
-    lposint = []
-    if method == 'integral':
-        for i in range(Y.shape[0]):
-            smax, pos, _ = max_integral(np.abs(Y[i]), wlenpre)
-            lposint.append(smax)
-    elif method == 'max':
-        for i in range(Y.shape[0]):
-            smax = np.max(Y[i, :])
-            lposint.append(smax)
+    X = np.load(data_path + 'mousepre2.npy')
+    Y = np.load(data_path + 'mousepost2.npy')
+    print(X.shape, Y.shape)
+    id = np.load(data_path + 'mouseids2.npy')
+    study2_5(X, Y, id, 'Intermediate Events ', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False,
+           tol=4, method=method, nfile='INT')
 
-    lposint = np.array(lposint)
-
-    return lpreint, lposint
 
 def spikes_frequency_graphs(X, Y, ids, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4, method='max', graph=False):
     """
@@ -478,6 +555,7 @@ def make_study6(sttl):
 
 
 if __name__ == '__main__':
-    make_study2('Orig')
+    # make_study2('Orig')
+    make_study2_5('Orig')
 
     # make_study6('Orig')
