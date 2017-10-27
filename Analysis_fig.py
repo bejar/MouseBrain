@@ -278,6 +278,8 @@ def study2_5(X, Y, id, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=
     maxrangeY = 15
 
     ddata = {}
+
+    totalpost = []
     for p, lim in enumerate([-1500, -1000, -500]):
         ddata[p] = [[],[]]
 
@@ -286,16 +288,23 @@ def study2_5(X, Y, id, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=
                 if (eclass and prei < posi) or (not eclass and prei > posi):
                     ddata[p][0].append(prei)
                     ddata[p][1].append(posi)
+                    totalpost.append(posi)
 
     for d in ddata:
         print(len(ddata[d][0]))
 
+
+    # pre
     print(ks_2samp(ddata[0][0], ddata[1][0]).pvalue)
     print(ks_2samp(ddata[0][0], ddata[2][0]).pvalue)
     print(ks_2samp(ddata[1][0], ddata[2][0]).pvalue)
+
+    # post
     print(ks_2samp(ddata[0][1], ddata[1][1]).pvalue)
     print(ks_2samp(ddata[0][1], ddata[2][1]).pvalue)
     print(ks_2samp(ddata[1][1], ddata[2][1]).pvalue)
+
+    return totalpost
 
 def make_study2(sttl):
     """
@@ -338,23 +347,41 @@ def make_study2_5(sttl):
     X = np.load(data_path + 'mousepre1.npy')
     Y = np.load(data_path + 'mousepost1.npy')
     id = np.load(data_path + 'mouseids1.npy')
-    study2_5(X, Y, id, 'Positive Events ', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=True, tol=4,
+    tpostpos = study2_5(X, Y, id, 'Positive Events ', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=True, tol=4,
            method=method, nfile='POS')
 
     X = np.load(data_path + 'mousepre0.npy')
     Y = np.load(data_path + 'mousepost0.npy')
     print(X.shape, Y.shape)
     id = np.load(data_path + 'mouseids0.npy')
-    study2_5(X, Y, id, 'Negative Events', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
+    tpostneg =study2_5(X, Y, id, 'Negative Events', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
            method=method, nfile='NEG')
 
     X = np.load(data_path + 'mousepre2.npy')
     Y = np.load(data_path + 'mousepost2.npy')
     print(X.shape, Y.shape)
     id = np.load(data_path + 'mouseids2.npy')
-    study2_5(X, Y, id, 'Intermediate Events ', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False,
+    tpostint = study2_5(X, Y, id, 'Intermediate Events ', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False,
            tol=4, method=method, nfile='INT')
 
+    print(len(tpostpos))
+    print(len(tpostint))
+    print(len(tpostneg))
+
+    sn.set(style="white",  color_codes=True)
+    sn.distplot(tpostpos, rug=False, hist=False, color='r', kde_kws={'linestyle':':'}, label='POSITIVE', norm_hist=True, axlabel='Std dev')
+    sn.distplot(tpostint, rug=False, hist=False, color='g', kde_kws={'linestyle':'--'}, label='INTERMEDIATE', norm_hist=True)
+    sn.distplot(tpostneg, rug=False, hist=False, color='b', kde_kws={'linestyle':'-.'}, label='NEGATIVE', norm_hist=True)
+    plt.legend()
+    plt.yticks([], [])
+    sn.despine()
+    plt.savefig(data_path + '/distribucion-post.pdf', format='pdf')
+    plt.show()
+
+
+    print(ks_2samp(tpostpos, tpostint).pvalue)
+    print(ks_2samp(tpostpos, tpostneg).pvalue)
+    print(ks_2samp(tpostint, tpostneg).pvalue)
 
 def spikes_frequency_graphs(X, Y, ids, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4, method='max', graph=False):
     """
@@ -659,8 +686,8 @@ def make_study4(sttl):
 
 if __name__ == '__main__':
     # make_study2('Orig')
-    # make_study2_5('Orig')
+    make_study2_5('Orig')
 
     # make_study6('Orig')
     # peaks_plots()
-    make_study4('TPS')
+    # make_study4('TPS')
