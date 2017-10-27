@@ -32,6 +32,22 @@ from scipy.signal import argrelextrema
 from pymongo import MongoClient
 import cPickle
 from scipy.stats import ks_2samp, anderson_ksamp
+import StringIO
+import cPickle
+import socket
+
+import matplotlib
+
+from pymongo import MongoClient
+
+#matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+
+import base64
+import numpy as np
+
+
 
 __author__ = 'bejar'
 
@@ -554,8 +570,97 @@ def make_study6(sttl):
     plt.show()
 
 
+def peaks_plots():
+    """
+    Examples of positive, negative and intermediate events
+    :return:
+    """
+    for lev, name in zip([[716, 701, 707], [3609, 816, 5210], [904, 818, 806]], ['POS', 'NEG', 'INT']):
+        fig = plt.figure(figsize=(10, 16), dpi=100)
+
+        for nrow, event in enumerate(lev):
+            sn.set(style="whitegrid",  color_codes=True)
+            print event
+            client = MongoClient('mongodb://localhost:27017/')
+            col = client.MouseBrain.Spikes
+
+            vals = col.find_one({'code': event},
+                                {'spike': 1, 'ospike': 1, 'mark': 1, 'premark': 1, 'event_time': 1, 'pre': 1, 'post': 1,
+                                 'vmax': 1, 'vmin': 1, 'sampling': 1, 'sigma': 1, 'latency': 1,
+                                 'discard': 1, 'annotation': 1, 'stmtime':1, 'stmspikes':1})
+
+            data = cPickle.loads(vals['spike'])
+            odata = cPickle.loads(vals['ospike'])
+            pre = cPickle.loads(vals['pre'])
+            post = cPickle.loads(vals['post'])
+            postmark = cPickle.loads(vals['mark'])
+            premark = cPickle.loads(vals['premark'])
+            stmspikes = cPickle.loads(vals['stmspikes'])
+            stmtime = vals['stmtime']
+
+            img = StringIO.StringIO()
+
+            axes = fig.add_subplot(3, 1, nrow +1)
+
+            sampling = 1000.0 / float(vals['sampling'])
+
+            axes.axis(
+                [- (pre.shape[0] * sampling), data.shape[0] * sampling - (pre.shape[0] * sampling), vals['vmin'], vals['vmax']])
+            axes.set_xlabel('time')
+            axes.set_ylabel('num stdv')
+            # axes.set_title("%s - Event %03d - T=%f" % (exp, event, vals['event_time']))
+            maxvg = np.max(data)
+            minvg = np.min(data)
+
+            t = np.arange(0.0, data.shape[0]) * sampling - (pre.shape[0] * sampling)
+            axes.xaxis.set_major_locator(ticker.MultipleLocator(100))
+            axes.yaxis.set_major_locator(ticker.MultipleLocator(2))
+            disc2 = int(vals['discard'] * 1000.0)
+            axes.plot(t, data, 'r')
+            axes.plot([0, 0], [minvg, maxvg], 'b')
+
+        plt.savefig(data_path + '/EventExamp%s.pdf' %(name), format='pdf')
+        plt.show()
+
+
+def make_study4(sttl):
+    """
+    Analizes the statistics of event site spikes depending on the characteristics of the
+    pre and post responses
+
+    Study 2 with the new data
+
+    :return:
+    """
+    method = 'max'  # max integral
+    winlen = 10
+    X = np.load(data_path + 'mouseprenew2.npy')
+    Y = np.load(data_path + 'mousepostnew2.npy')
+    print(X.shape, Y.shape)
+    id = np.load(data_path + 'mouseidsnew2.npy')
+    study2(X, Y, id, 'Evento Intermedio ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False,
+           tol=4,
+           method=method, new=True, nfile='INT'+sttl)
+
+    X = np.load(data_path + 'mouseprenew0.npy')
+    Y = np.load(data_path + 'mousepostnew0.npy')
+    print(X.shape, Y.shape)
+    id = np.load(data_path + 'mouseidsnew0.npy')
+    study2(X, Y, id, 'Evento Negativo ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
+           method=method, new=True, nfile='NEG'+sttl)
+
+    X = np.load(data_path + 'mouseprenew1.npy')
+    Y = np.load(data_path + 'mousepostnew1.npy')
+    print(X.shape, Y.shape)
+    id = np.load(data_path + 'mouseidsnew1.npy')
+    study2(X, Y, id, 'Evento Positivo ' + sttl, winlen, winlen, off=0.035, freq=256.4102564102564, eclass=True, tol=4,
+           method=method, new=True, nfile='POS'+sttl)
+
+
 if __name__ == '__main__':
     # make_study2('Orig')
-    make_study2_5('Orig')
+    # make_study2_5('Orig')
 
     # make_study6('Orig')
+    # peaks_plots()
+    make_study4('TPS')

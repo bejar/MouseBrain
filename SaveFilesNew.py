@@ -58,7 +58,7 @@ if __name__ == '__main__':
             data.read(normalize=True)
             data.downsample(256.4102564102564)
             data.extract_events(1.5, 0.5)
-            data.mark_spikes(1.75, 0.035)
+            data.mark_spikes(1.5, 0.035)
             data.mark_pre_events()
             labels.append(data.assign_labels())
             ids.append(lid)

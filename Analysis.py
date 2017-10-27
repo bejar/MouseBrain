@@ -36,28 +36,6 @@ from scipy.stats import ks_2samp, anderson_ksamp
 __author__ = 'bejar'
 
 
-# def integral(pre, post):
-#     """
-#     Integral of the signals
-#
-#     :param pre:
-#     :param post:
-#     :return:
-#     """
-#     lintpre = [np.sum(np.abs(X[i])) for i in range(pre.shape[0])]
-#     lintpost = [np.sum(np.abs(Y[i])) for i in range(post.shape[0])]
-#
-#     fig = plt.figure(figsize=(10, 10))
-#     sn.distplot(lintpre)
-#     plt.show()
-#     fig = plt.figure(figsize=(10, 10))
-#     sn.distplot(lintpost)
-#     plt.show()
-#
-#     fig = plt.figure(figsize=(10, 10))
-#     plt.scatter(lintpre, lintpost)
-#     plt.show()
-
 def accum_sep(vdata):
     """
 
@@ -114,7 +92,7 @@ def plot_positions(id, eleft, eright, axes, data, mxstd, tol=2, eclass=True, new
                 cm = 'k' if mxstd[ip] > tol else clm
                 ax1.plot([prep], [prei], cm, marker=mark)
                 ax1.plot([posp], [posi], clm, marker=mark)
-                # print(id[ip], prei, posi)
+                print('+', id[ip], prei, posi)
                 ax3.plot(posi, prei, clm, marker=mark)
                 if prei >= posi:
                     ax3.set_xlabel('POST < PRE')
@@ -127,6 +105,7 @@ def plot_positions(id, eleft, eright, axes, data, mxstd, tol=2, eclass=True, new
                 ax2.plot([posp], [posi], clm, marker=mark)
                 ax2.plot([prep, posp], [prei, posi], 'r:')
                 ax4.plot(posi, prei, clm, marker=mark)
+                print('-', id[ip], prei, posi)
                 if prei >= posi:
                     ax4.set_xlabel('POST < PRE')
                 else:
@@ -914,9 +893,9 @@ if __name__ == '__main__':
     # X = np.load(data_path + 'mousepre2.npy')
     # Y = np.load(data_path + 'mousepost2.npy')
     # id = np.load(data_path + 'mouseids2.npy')
-    make_study2('Orig')
-    # make_study4('TPS')
+    # make_study2('Orig')
+    make_study4('TPS')
 
     # make_study5('Orig')
 
-    make_study6('Orig')
+    # make_study6('Orig')
