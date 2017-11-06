@@ -47,7 +47,7 @@ import matplotlib.ticker as ticker
 import base64
 import numpy as np
 
-
+import pandas as pd
 
 __author__ = 'bejar'
 
@@ -369,19 +369,32 @@ def make_study2_5(sttl):
     print(len(tpostneg))
 
     sn.set(style="white",  color_codes=True)
-    sn.distplot(tpostpos, rug=False, hist=False, color='r', kde_kws={'linestyle':':'}, label='POSITIVE', norm_hist=True, axlabel='Std dev')
-    sn.distplot(tpostint, rug=False, hist=False, color='g', kde_kws={'linestyle':'--'}, label='INTERMEDIATE', norm_hist=True)
-    sn.distplot(tpostneg, rug=False, hist=False, color='b', kde_kws={'linestyle':'-.'}, label='NEGATIVE', norm_hist=True)
-    plt.legend()
-    plt.yticks([], [])
+    # sn.distplot(tpostpos, rug=False, hist=False, color='r', kde_kws={'linestyle':':'}, label='POSITIVE', norm_hist=True, axlabel='Std dev')
+    # sn.distplot(tpostint, rug=False, hist=False, color='g', kde_kws={'linestyle':'--'}, label='INTERMEDIATE', norm_hist=True)
+    # sn.distplot(tpostneg, rug=False, hist=False, color='b', kde_kws={'linestyle':'-.'}, label='NEGATIVE', norm_hist=True)
+    # plt.legend()
+    # plt.yticks([], [])
+    # sn.despine()
+    # plt.savefig(data_path + '/distribucion-post.pdf', format='pdf')
+    # plt.show()
+    #
+    df = pd.DataFrame({'Experiment': ['Positive'] * len(tpostpos) + ['Intermediate'] * len(tpostint) + ['Negative'] * len(tpostneg),
+                       'Std Dev': list(tpostpos) + list(tpostint) + list(tpostneg)})
+    g = sn.factorplot(x='Experiment', y='Std Dev', data=df, kind='bar', capsize=.1)
     sn.despine()
-    plt.savefig(data_path + '/distribucion-post.pdf', format='pdf')
+    g.set_axis_labels("", "Std dev")
+    plt.savefig(data_path + '/distribucion-bar-post.pdf', format='pdf')
     plt.show()
 
+    g = sn.factorplot(x='Experiment', y='Std Dev', data=df, kind='box')
+    sn.despine()
+    g.set_axis_labels("", "Std dev")
+    plt.savefig(data_path + '/distribucion-boxplot-post.pdf', format='pdf')
+    plt.show()
 
-    print(ks_2samp(tpostpos, tpostint).pvalue)
-    print(ks_2samp(tpostpos, tpostneg).pvalue)
-    print(ks_2samp(tpostint, tpostneg).pvalue)
+    # print(ks_2samp(tpostpos, tpostint).pvalue)
+    # print(ks_2samp(tpostpos, tpostneg).pvalue)
+    # print(ks_2samp(tpostint, tpostneg).pvalue)
 
 def spikes_frequency_graphs(X, Y, ids, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=4, method='max', graph=False):
     """
