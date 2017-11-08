@@ -280,15 +280,19 @@ def study2_5(X, Y, id, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=
     ddata = {}
 
     totalpost = []
+    dposi = {}
     for p, lim in enumerate([-1500, -1000, -500]):
         ddata[p] = [[],[]]
-
+        segposi = []
         for prep, prei, posp, posi in zip(lprepos, lpreint, lpospos, lposint):
             if lim < prep < (lim+500):
                 if (eclass and prei < posi) or (not eclass and prei > posi):
                     ddata[p][0].append(prei)
                     ddata[p][1].append(posi)
                     totalpost.append(posi)
+                    segposi.append(posi)
+
+        dposi[str(-lim)] = segposi
 
     for d in ddata:
         print(len(ddata[d][0]))
@@ -304,7 +308,7 @@ def study2_5(X, Y, id, title, wlenpre, wlenpos, off=0, freq=0, eclass=True, tol=
     print(ks_2samp(ddata[0][1], ddata[2][1]).pvalue)
     print(ks_2samp(ddata[1][1], ddata[2][1]).pvalue)
 
-    return totalpost
+    return totalpost, dposi
 
 def make_study2(sttl):
     """
@@ -347,21 +351,21 @@ def make_study2_5(sttl):
     X = np.load(data_path + 'mousepre1.npy')
     Y = np.load(data_path + 'mousepost1.npy')
     id = np.load(data_path + 'mouseids1.npy')
-    tpostpos = study2_5(X, Y, id, 'Positive Events ', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=True, tol=4,
+    tpostpos, dpostpos = study2_5(X, Y, id, 'Positive Events ', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=True, tol=4,
            method=method, nfile='POS')
 
     X = np.load(data_path + 'mousepre0.npy')
     Y = np.load(data_path + 'mousepost0.npy')
     print(X.shape, Y.shape)
     id = np.load(data_path + 'mouseids0.npy')
-    tpostneg =study2_5(X, Y, id, 'Negative Events', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
+    tpostneg, dpostneg =study2_5(X, Y, id, 'Negative Events', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False, tol=4,
            method=method, nfile='NEG')
 
     X = np.load(data_path + 'mousepre2.npy')
     Y = np.load(data_path + 'mousepost2.npy')
     print(X.shape, Y.shape)
     id = np.load(data_path + 'mouseids2.npy')
-    tpostint = study2_5(X, Y, id, 'Intermediate Events ', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False,
+    tpostint, dpostint = study2_5(X, Y, id, 'Intermediate Events ', winlen, winlen, off=0.035, freq=256.4102564102564, eclass=False,
            tol=4, method=method, nfile='INT')
 
     print(len(tpostpos))
@@ -377,19 +381,57 @@ def make_study2_5(sttl):
     # sn.despine()
     # plt.savefig(data_path + '/distribucion-post.pdf', format='pdf')
     # plt.show()
+
+
+    # df = pd.DataFrame({'Experiment': ['Positive'] * len(tpostpos) + ['Intermediate'] * len(tpostint) + ['Negative'] * len(tpostneg),
+    #                    'Std Dev': list(tpostpos) + list(tpostint) + list(tpostneg)})
+    # g = sn.factorplot(x='Experiment', y='Std Dev', data=df, kind='bar', capsize=.1)
+    # sn.despine()
+    # g.set_axis_labels("", "Std dev")
+    # plt.savefig(data_path + '/distribucion-bar-post.pdf', format='pdf')
+    # plt.show()
     #
-    df = pd.DataFrame({'Experiment': ['Positive'] * len(tpostpos) + ['Intermediate'] * len(tpostint) + ['Negative'] * len(tpostneg),
-                       'Std Dev': list(tpostpos) + list(tpostint) + list(tpostneg)})
-    g = sn.factorplot(x='Experiment', y='Std Dev', data=df, kind='bar', capsize=.1)
+    # g = sn.factorplot(x='Experiment', y='Std Dev', data=df, kind='box')
+    # sn.despine()
+    # g.set_axis_labels("", "Std dev")
+    # plt.savefig(data_path + '/distribucion-boxplot-post.pdf', format='pdf')
+    # plt.show()
+
+    colTime =  []
+    colVal = []
+    colExp = []
+
+    for v in dpostpos:
+        colTime += [v] * len(dpostpos[v])
+        colVal += dpostpos[v]
+    colExp += ['Positive'] * len(tpostpos)
+
+    for v in dpostint:
+        colTime += [v] * len(dpostint[v])
+        colVal += dpostint[v]
+    colExp += ['Intermediate'] * len(tpostint)
+
+    for v in dpostneg:
+        colTime += [v] * len(dpostneg[v])
+        colVal += dpostneg[v]
+    colExp += ['Negative'] * len(tpostneg)
+
+    df = pd.DataFrame({'Experiment': colExp,
+                       'Interval': colTime,
+                       'Std Dev': colVal})
+    # g = sn.factorplot(col='Experiment', y='Std Dev', x='Interval', data=df, kind='bar', capsize=.1, hue_order=['1500', '1000', '500'])
+    g = sn.factorplot(col='Experiment', y='Std Dev', x='Interval', data=df, kind='bar', capsize=.1,
+                      col_order=['Positive', 'Intermediate', 'Negative'], order=['1500', '1000', '500'])
     sn.despine()
-    g.set_axis_labels("", "Std dev")
-    plt.savefig(data_path + '/distribucion-bar-post.pdf', format='pdf')
+    g.set_axis_labels("Interval", "Std dev")
+    plt.savefig(data_path + '/distribucion-bar-compare-post.pdf', format='pdf')
     plt.show()
 
-    g = sn.factorplot(x='Experiment', y='Std Dev', data=df, kind='box')
+    g = sn.factorplot(col='Experiment', y='Std Dev', x='Interval', data=df, kind='box',
+                      col_order=['Positive', 'Intermediate', 'Negative'], order=['1500', '1000', '500'])
     sn.despine()
     g.set_axis_labels("", "Std dev")
-    plt.savefig(data_path + '/distribucion-boxplot-post.pdf', format='pdf')
+    plt.savefig(data_path + '/distribucion-boxplot-compare-post.pdf', format='pdf')
     plt.show()
 
     # print(ks_2samp(tpostpos, tpostint).pvalue)
